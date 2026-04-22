@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rótulo na embalagem</title>
+    <link rel="stylesheet" href="/static/styles.css?v=3" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Rótulo na embalagem</h1>
+        <p class="lead">
+          Escolha a <strong>foto da embalagem</strong>. O fundo branco é aplicado no servidor; depois
+          <strong>arraste o rótulo</strong> para cobrir o rótulo branco da loja e clique em
+          <strong>Gerar PNG final</strong>.
+        </p>
+        <p class="lead">
+          Rótulo: <code>static/labels/official-label.png</code> (fundo preto da arte vira transparência).
+        </p>
+        <p class="lead warn">
+          Abra em <strong>http://127.0.0.1:8765</strong> com o servidor a correr (requer
+          <code>rembg</code> instalado).
+        </p>
+      </header>
+
+      <section class="card">
+        <h2>Foto da embalagem</h2>
+        <input type="file" id="pkgInput" accept="image/*" />
+        <p class="hint" id="statusHint">JPG ou PNG. Cmd+Shift+R se a página estiver em cache.</p>
+        <p class="hint error" id="errorHint" hidden></p>
+
+        <div id="editorWrap" class="editor-wrap" hidden>
+          <h3 class="editor-title">Ajustar rótulo</h3>
+          <p class="hint editor-hint">
+            Arraste o rótulo verde. Use <strong>Posição sugerida</strong> como ponto de partida ou
+            <strong>Centralizar</strong>. A largura altera o tamanho (mantém proporção).
+          </p>
+          <div class="stage" id="stage">
+            <img id="bgPreview" class="stage-bg" alt="Pré-visualização" draggable="false" />
+            <div class="label-layer" id="labelLayer">
+              <img id="labelDrag" class="label-drag" alt="Rótulo" draggable="false" />
+            </div>
+          </div>
+          <div class="editor-tools">
+            <label class="slider-label">
+              Largura na foto
+              <input type="range" id="widthSlider" min="50" max="100" value="85" />
+              <span id="widthValue">85%</span>
+            </label>
+            <div class="btn-row flex-wrap">
+              <button type="button" class="btn" id="btnSuggest">Posição sugerida</button>
+              <button type="button" class="btn" id="btnCenter">Centralizar</button>
+              <button type="button" class="btn primary" id="btnExport">Gerar PNG final</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="resultWrap" class="result-block" hidden>
+          <h3 class="editor-title">Resultado</h3>
+          <img id="resultImg" alt="Resultado" />
+          <a class="btn primary" id="downloadBtn" href="#" download="embalagem.png">Baixar PNG</a>
+        </div>
+      </section>
+    </div>
+    <script src="/static/app.js?v=3"></script>
+  </body>
+</html>

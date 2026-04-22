@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.env.local
+*.log
+*.tsbuildinfo
+server/data/inventory.json
+server/data/email-outbox.json

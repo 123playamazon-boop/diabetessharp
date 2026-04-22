@@ -1,0 +1,11 @@
+services:
+  scrape-api:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      PORT: "8787"
+      # Origens do front (Vite dev ou preview). Em produção: https://app.teudominio.com
+      CORS_ORIGIN: "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173"
+      # Opcional: PDP Amazon pode ultrapassar 12 MB — aumenta se precisares (bytes)
+      # SCRAPE_MAX_HTML_BYTES: "18000000"

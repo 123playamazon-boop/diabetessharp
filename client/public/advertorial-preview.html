@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DiabetesSharp — Advertorial preview (CNN style)</title>
+  <meta name="description" content="Preview estático do advertorial DiabetesSharp — mesmo conteúdo da rota /advertorial." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fff; color: #111827; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; }
+    .strip { background: #dc2626; color: #fff; text-align: center; padding: 0.5rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
+    .nav { border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: #fff; z-index: 50; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .nav-inner { max-width: 72rem; margin: 0 auto; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+    .nav-left { display: flex; align-items: center; gap: 1.5rem; min-width: 0; flex: 1; }
+    .cnn-badge { background: #dc2626; color: #fff; padding: 0.125rem 0.5rem; font-weight: 700; font-size: 1.125rem; letter-spacing: -0.02em; text-decoration: none; display: inline-block; }
+    .nav-health { font-weight: 700; color: #1f2937; font-size: 1.125rem; display: none; }
+    @media (min-width: 640px) { .nav-health { display: inline; } }
+    .nav-links { display: none; gap: 1.25rem; font-size: 0.875rem; color: #374151; }
+    @media (min-width: 768px) { .nav-links { display: flex; } }
+    .nav-links a { text-decoration: none; color: #374151; }
+    .nav-links a:hover { color: #111827; }
+    .nav-links a.fw { font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .nav-right .muted { display: none; font-size: 0.875rem; color: #4b5563; text-decoration: none; }
+    @media (min-width: 640px) { .nav-right .muted { display: inline; } }
+    .btn-cta { background: #b91c1c; color: #fff !important; text-decoration: none !important; font-size: 0.875rem; font-weight: 600; padding: 0.625rem 1rem; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 0.5rem; }
+    .btn-cta:hover { background: #991b1b; }
+    article { max-width: 48rem; margin: 0 auto; padding: 1.5rem 1rem 2rem; padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
+    @media (min-width: 640px) { article { padding: 3rem 1.5rem; } }
+    .kicker { color: #dc2626; font-weight: 700; font-size: 0.875rem; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .updated { font-size: 0.75rem; color: #6b7280; margin-bottom: 1rem; }
+    h1 { font-size: 1.25rem; line-height: 1.25; margin: 0 0 1rem; font-weight: 700; color: #111827; }
+    @media (min-width: 640px) { h1 { font-size: 1.5rem; } }
+    @media (min-width: 768px) { h1 { font-size: 1.875rem; } }
+    .lead { font-size: 1rem; color: #374151; margin-bottom: 1rem; line-height: 1.625; }
+    @media (min-width: 640px) { .lead { font-size: 1.25rem; margin-bottom: 1.5rem; } }
+    .byline { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; }
+    @media (min-width: 640px) { .byline { margin-bottom: 2rem; padding-bottom: 2rem; } }
+    .avatar-sm { width: 2.75rem; height: 2.75rem; border-radius: 9999px; background: linear-gradient(to bottom right, #60a5fa, #2563eb); color: #fff; font-weight: 700; font-size: 0.875rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    @media (min-width: 640px) { .avatar-sm { width: 3rem; height: 3rem; } }
+    .byline-name { font-weight: 700; color: #111827; font-size: 0.875rem; }
+    @media (min-width: 640px) { .byline-name { font-size: 1rem; } }
+    .byline-meta { font-size: 0.75rem; color: #6b7280; }
+    @media (min-width: 640px) { .byline-meta { font-size: 0.875rem; } }
+    .testimonial { background: #fef2f2; border-left: 4px solid #dc2626; padding: 1rem 1.25rem; margin-bottom: 1.5rem; border-radius: 0 0.5rem 0.5rem 0; }
+    @media (min-width: 640px) { .testimonial { padding: 1.5rem; margin-bottom: 2rem; } }
+    .testimonial-inner { display: flex; flex-direction: column; gap: 1rem; align-items: center; text-align: center; }
+    @media (min-width: 640px) { .testimonial-inner { flex-direction: row; align-items: flex-start; text-align: left; } }
+    .testimonial img { width: 4rem; height: 4rem; border-radius: 9999px; object-fit: cover; border: 2px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    @media (min-width: 640px) { .testimonial img { width: 5rem; height: 5rem; } }
+    @media (min-width: 768px) { .testimonial img { width: 6rem; height: 6rem; } }
+    .stars { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    @media (min-width: 640px) { .stars { font-size: 1.875rem; } }
+    .testimonial q { font-size: 1rem; font-weight: 600; color: #111827; display: block; margin-bottom: 0.5rem; line-height: 1.5; }
+    @media (min-width: 640px) { .testimonial q { font-size: 1.125rem; } }
+    .testimonial cite { font-size: 0.875rem; color: #4b5563; font-style: normal; }
+    .prose p { color: #1f2937; line-height: 1.625; margin-bottom: 1rem; font-size: 1rem; }
+    @media (min-width: 640px) { .prose p { margin-bottom: 1.5rem; } }
+    figure { margin: 1.5rem 0; }
+    @media (min-width: 640px) { figure { margin: 2.5rem 0; } }
+    figure > img { width: 100%; border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.07); object-fit: cover; max-height: 280px; }
+    @media (min-width: 640px) { figure > img { max-height: 400px; } }
+    figcaption { margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280; text-align: center; padding: 0 0.25rem; }
+    @media (min-width: 640px) { figcaption { font-size: 0.875rem; } }
+    .alert-box { background: #fef2f2; border: 2px solid #ef4444; border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem; }
+    @media (min-width: 640px) { .alert-box { padding: 2rem; margin-bottom: 2rem; } }
+    .alert-flex { display: flex; flex-direction: column; gap: 1rem; }
+    @media (min-width: 640px) { .alert-flex { flex-direction: row; } }
+    .alert-ico { font-size: 2rem; text-align: center; }
+    @media (min-width: 640px) { .alert-ico { font-size: 2.25rem; text-align: left; } }
+    .alert-box ul { margin: 0; padding: 0; list-style: none; color: #1f2937; font-size: 0.875rem; font-weight: 500; }
+    .alert-box li { margin-bottom: 0.5rem; }
+    .alert-box .title { font-weight: 700; color: #111827; font-size: 1rem; margin-bottom: 0.75rem; }
+    @media (min-width: 640px) { .alert-box .title { font-size: 1.125rem; } }
+    .center-cta { text-align: center; margin-bottom: 2rem; }
+    @media (min-width: 640px) { .center-cta { margin-bottom: 3rem; } }
+    .btn-lg { background: #b91c1c; color: #fff !important; text-decoration: none !important; font-weight: 700; font-size: 1rem; padding: 1rem 2rem; min-height: 52px; display: inline-flex; align-items: center; justify-content: center; border-radius: 0.75rem; width: 100%; }
+    @media (min-width: 640px) { .btn-lg { width: auto; font-size: 1.125rem; padding: 1.25rem 2rem; } }
+    .btn-lg:hover { background: #991b1b; }
+    .cta-note { font-size: 0.75rem; color: #6b7280; margin-top: 0.75rem; }
+    h2 { font-size: 1.25rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; }
+    @media (min-width: 640px) { h2 { font-size: 1.5rem; margin-bottom: 1rem; } }
+    @media (min-width: 768px) { h2 { font-size: 1.875rem; } }
+    .feature-list { list-style: none; padding: 0; margin: 0 0 1.5rem; }
+    .feature-list li { display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 1rem; }
+    @media (min-width: 640px) { .feature-list li { margin-bottom: 1.25rem; } }
+    .feature-list .ico { font-size: 1.25rem; flex-shrink: 0; }
+    @media (min-width: 640px) { .feature-list .ico { font-size: 1.5rem; } }
+    .grid-2 { display: grid; gap: 1rem; margin-bottom: 2rem; }
+    @media (min-width: 768px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+    .grid-2 img { aspect-ratio: 4/3; max-height: none; }
+    .results-wrap { background: #f9fafb; padding: 1rem; border-radius: 0.75rem; margin-bottom: 1.5rem; }
+    @media (min-width: 640px) { .results-wrap { padding: 2rem; margin-bottom: 2rem; } }
+    .results-wrap h2 { text-align: center; margin-bottom: 1.5rem; }
+    @media (min-width: 640px) { .results-wrap h2 { margin-bottom: 2rem; } }
+    .grid-3 { display: grid; gap: 1rem; }
+    @media (min-width: 768px) { .grid-3 { grid-template-columns: repeat(3, 1fr); gap: 2rem; } }
+    .card-w { background: #fff; padding: 1rem; border-radius: 0.75rem; }
+    @media (min-width: 640px) { .card-w { padding: 1.5rem; } }
+    .stat-big { text-align: center; margin-bottom: 1rem; font-size: 2.25rem; font-weight: 700; color: #2563eb; }
+    .stat-label { text-align: center; font-size: 0.875rem; color: #4b5563; margin-bottom: 1rem; }
+    .fb-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem; }
+    @media (min-width: 640px) { .fb-head { font-size: 1.5rem; } }
+    .fb-icon { width: 2.25rem; height: 2.25rem; border-radius: 9999px; background: #1877f2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    @media (min-width: 640px) { .fb-icon { width: 2.5rem; height: 2.5rem; } }
+    .fb-icon svg { width: 1.25rem; height: 1.25rem; fill: #fff; }
+    .fb-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 2rem; }
+    .fb-post-head { display: flex; gap: 0.75rem; padding: 1rem; border-bottom: 1px solid #e5e7eb; background: #f9fafb; align-items: center; }
+    .fb-post-head img { width: 2.5rem; height: 2.5rem; border-radius: 9999px; object-fit: cover; }
+    .fb-comments { padding: 1rem; }
+    .fb-comment { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .fb-comment img { width: 2.25rem; height: 2.25rem; border-radius: 9999px; object-fit: cover; flex-shrink: 0; }
+    .fb-comment .meta { font-size: 0.875rem; }
+    .fb-comment .body { font-size: 0.875rem; color: #1f2937; margin-top: 0.125rem; line-height: 1.375; }
+    .fb-comment .actions { font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; }
+    .live-box { background: #dc2626; color: #fff; padding: 1rem; border-radius: 0.75rem; text-align: center; margin-bottom: 1.5rem; }
+    @media (min-width: 640px) { .live-box { padding: 2rem; margin-bottom: 2rem; } }
+    .live-box .num { font-size: 2.25rem; font-weight: 700; }
+    @media (min-width: 640px) { .live-box .num { font-size: 3rem; } }
+    details { background: #f9fafb; padding: 1rem; border-radius: 0.75rem; margin-bottom: 0.75rem; cursor: pointer; }
+    @media (min-width: 640px) { details { padding: 1.5rem; margin-bottom: 1rem; } }
+    details summary { font-weight: 700; color: #111827; font-size: 0.875rem; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    @media (min-width: 640px) { details summary { font-size: 1rem; } }
+    details p { color: #4b5563; margin-top: 1rem; margin-bottom: 0; }
+    .story { background: #f9fafb; padding: 1rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+    @media (min-width: 640px) { .story { padding: 2rem; margin-bottom: 3rem; } }
+    .story p { color: #374151; line-height: 1.625; margin-bottom: 1rem; font-size: 0.875rem; }
+    @media (min-width: 640px) { .story p { font-size: 1rem; } }
+    .final-cta { background: #111827; color: #fff; padding: 1.5rem; border-radius: 0.75rem; text-align: center; }
+    @media (min-width: 640px) { .final-cta { padding: 3rem; } }
+    .final-cta h2 { color: #fff; font-size: 1.5rem; margin-bottom: 0.75rem; }
+    @media (min-width: 640px) { .final-cta h2 { font-size: 1.875rem; } }
+    @media (min-width: 768px) { .final-cta h2 { font-size: 2.25rem; } }
+    .final-cta .sub { font-size: 1rem; opacity: 0.9; margin-bottom: 1.5rem; line-height: 1.5; }
+    @media (min-width: 640px) { .final-cta .sub { font-size: 1.25rem; margin-bottom: 2rem; } }
+    .final-cta .fine { font-size: 0.75rem; opacity: 0.75; margin-top: 1rem; }
+    @media (min-width: 640px) { .final-cta .fine { font-size: 0.875rem; margin-top: 1.5rem; } }
+    footer { background: #111827; color: #9ca3af; padding: 2rem 1rem; margin-top: 2.5rem; padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
+    @media (min-width: 640px) { footer { padding: 3rem 1.5rem; margin-top: 4rem; } }
+    .foot-inner { max-width: 72rem; margin: 0 auto; }
+    .foot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media (min-width: 640px) { .foot-grid { grid-template-columns: repeat(4, 1fr); gap: 2rem; margin-bottom: 2rem; } }
+    .foot-grid h3 { color: #fff; font-size: 0.875rem; margin: 0 0 0.75rem; }
+    @media (min-width: 640px) { .foot-grid h3 { font-size: 1rem; margin-bottom: 1rem; } }
+    .foot-grid ul { list-style: none; padding: 0; margin: 0; font-size: 0.75rem; }
+    @media (min-width: 640px) { .foot-grid ul { font-size: 0.875rem; } }
+    .foot-grid li { margin-bottom: 0.375rem; }
+    .foot-grid a { color: #9ca3af; text-decoration: none; }
+    .foot-grid a:hover { color: #fff; }
+    .foot-brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; text-decoration: none; color: inherit; }
+    .foot-brand img { width: 2rem; height: 2rem; object-fit: contain; }
+    .foot-brand span { color: #fff; font-weight: 700; font-size: 0.875rem; }
+    @media (min-width: 640px) { .foot-brand span { font-size: 1rem; } }
+    .foot-copy { border-top: 1px solid #374151; padding-top: 1.5rem; text-align: center; font-size: 0.75rem; }
+    @media (min-width: 640px) { .foot-copy { font-size: 0.875rem; } }
+    .preview-banner { background: #1e3a5f; color: #e0e7ff; padding: 0.5rem 1rem; font-size: 0.75rem; text-align: center; }
+    .preview-banner code { background: rgba(255,255,255,0.15); padding: 0.1rem 0.35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <!-- Abra com o dev server para imagens em / e link /quiz: npm run dev:client → http://localhost:4001/advertorial-preview.html -->
+  <div class="preview-banner">Preview HTML estático · Imagens: mesmos ficheiros que em <code>client/public</code> · CTAs → <code>/quiz</code></div>
+
+  <div class="strip">CNN HEALTH — Diabetes &amp; Blood Sugar</div>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="#content" class="cnn-badge">CNN</a>
+        <span class="nav-health">Health</span>
+        <div class="nav-links">
+          <a href="#content">Life, But Better</a>
+          <a href="#content">Fitness</a>
+          <a href="#content">Food</a>
+          <a href="#content">Sleep</a>
+          <a href="#content">Mindfulness</a>
+          <a href="#content" class="fw">Diabetes</a>
+        </div>
+      </div>
+      <div class="nav-right">
+        <a href="#content" class="muted">Watch</a>
+        <a href="#content" class="muted">Listen</a>
+        <a class="btn-cta" href="/quiz">Free Diabetes Check</a>
+      </div>
+    </div>
+  </nav>
+
+  <article id="content">
+    <div class="kicker">EXCLUSIVE · DIABETES &amp; BLOOD SUGAR</div>
+    <div class="updated">Updated 4:12 PM ET, March 14, 2026</div>
+
+    <h1>Your Blood Sugar Is Out of Control — Here&apos;s How to Take Back Control (Before Complications Start)</h1>
+
+    <p class="lead"><strong>37 million Americans</strong> have diabetes. <strong>96 million</strong> have prediabetes — and most don&apos;t know it. Damage to your heart, kidneys, eyes, and nerves can start <strong>years</strong> before you notice a single symptom. Research from leading medical centers has identified a simple 90-day protocol that helps <strong>stabilize blood sugar, improve HbA1c, and reduce the risk of complications</strong> — with the right diet, tracking, and daily support. It&apos;s now available in the U.S.</p>
+
+    <div class="byline">
+      <div class="avatar-sm">SM</div>
+      <div>
+        <div class="byline-name">By Sarah Mitchell, CNN Health</div>
+        <div class="byline-meta">12 min read · 52,847 reads</div>
+      </div>
+    </div>
+
+    <div class="testimonial">
+      <div class="testimonial-inner">
+        <img src="/patricia_testimonial.png" alt="Patricia S., DiabetesSharp user" width="96" height="96" />
+        <div style="flex:1;min-width:0">
+          <div class="stars">⭐⭐⭐⭐⭐</div>
+          <p style="margin:0 0 0.5rem;font-size:1rem;font-weight:600;color:#111827;line-height:1.5">&quot;My HbA1c was 9.2. I was scared of insulin and complications. In 60 days I got it down to 7.1 with the app — recipes, reminders, and someone to answer my questions 24/7. My doctor said he&apos;d never seen such a turn-around.&quot;</p>
+          <p style="margin:0;font-size:0.875rem;color:#4b5563">— Patricia S., Miami, FL, age 58</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p><strong>BOSTON —</strong> You skip a meal. You feel dizzy. You tell yourself it&apos;s stress. Age. Busy life. <strong>But the numbers don&apos;t lie:</strong> diabetes and prediabetes can damage your vessels and nerves <strong>years</strong> before you or your doctor notice. By the time you get a serious diagnosis, the best window to avoid complications has already narrowed.</p>
+      <p>More than <strong>37 million American adults</strong> have diabetes. <strong>96 million</strong> have prediabetes — and the majority don&apos;t know it. Uncontrolled blood sugar leads to heart disease, kidney failure, vision loss, and amputations. Yet <strong>most people</strong> never get a clear, simple plan: what to eat, when to check glucose, and how to stay on track every day. They wait. The numbers get worse.</p>
+      <p>&quot;We&apos;re facing a silent epidemic,&quot; says Dr. James Mitchell, endocrinologist and Director of Diabetes Care at a leading medical center. &quot;Millions have blood sugar that is <strong>manageable</strong> with the right protocol — but they&apos;re told to take a pill and hope. For those who already have type 2 or prediabetes, we&apos;ve seen meaningful improvement in HbA1c and daily control with structured diet, tracking, and 24/7 support. The question is whether people will act.&quot;</p>
+    </div>
+
+    <figure>
+      <img src="/diabetes_sugar_hero.png" alt="Blood sugar monitoring and diabetes care" />
+      <figcaption>Feeling trapped by sugar? Taking control of your blood sugar can change your story.</figcaption>
+    </figure>
+
+    <div class="alert-box">
+      <div class="alert-flex">
+        <div class="alert-ico">⚠️</div>
+        <div>
+          <p class="title">THESE 7 SIGNS MAY MEAN YOUR BLOOD SUGAR IS AT RISK — CHECK NOW.</p>
+          <ul>
+            <li>• Feeling very thirsty or peeing more often than usual</li>
+            <li>• Blurred vision or tired eyes</li>
+            <li>• Constant fatigue, especially after meals</li>
+            <li>• Cuts or bruises that heal slowly</li>
+            <li>• Tingling or numbness in hands or feet</li>
+            <li>• Family history of diabetes or prediabetes</li>
+            <li>• Overweight or sedentary lifestyle</li>
+          </ul>
+          <p style="margin:1rem 0 0;font-size:0.875rem;color:#1f2937">If you have <strong>2 or more</strong>, your risk is elevated. The sooner you act, the more you can protect your health — and <strong>even if you already have diabetes or prediabetes</strong>, a structured 90-day program can help you improve your numbers. A free assessment in under 30 seconds shows your level and what to do next.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="center-cta">
+      <a class="btn-lg" href="/quiz">🩸 CHECK MY RISK NOW — FREE ASSESSMENT (UNDER 30 SEC)</a>
+      <p class="cta-note">No credit card · 100% confidential · See your diabetes risk level in under 30 seconds</p>
+    </div>
+
+    <div class="prose">
+      <h2>How to Take Control of Your Blood Sugar — Whether You Have Prediabetes or Type 2</h2>
+      <p>Leading endocrinologists and nutritionists built a 90-day protocol that helps <strong>stabilize glucose, improve HbA1c, and reduce the risk of complications</strong>. <strong>No miracle cures.</strong> Just a clear plan: what to eat, when to check, and daily support. The DiabetesSharp app delivers it all in one place. Here&apos;s what you get:</p>
+    </div>
+
+    <ul class="feature-list">
+      <li><span class="ico">🤖</span><div><strong>Q&amp;A 24/7 About Diabetes</strong> — Ask anything about blood sugar, medications, meals, exercise, or your results. Get clear answers day or night — no judgment, no waiting for an appointment. <strong>You&apos;re never alone with your questions again.</strong></div></li>
+      <li><span class="ico">💬</span><div><strong>Sofia — Your Diabetes Companion</strong> — She helps you stay on track with gentle reminders, tips, and motivation. Ask her about meal choices, portion sizes, or what to do when you slip. <strong>Like having a coach who never gets impatient.</strong></div></li>
+      <li><span class="ico">🥗</span><div><strong>Recipes &amp; Meal Plans for Diabetes</strong> — Low-glycemic, diabetes-friendly recipes, a 7-day meal plan, and a printable shopping list. No fad diets: science-backed meals that help keep your blood sugar stable. Step-by-step instructions so you can eat well without the overwhelm.</div></li>
+      <li><span class="ico">📋</span><div><strong>Smart Shopping List</strong> — A list built around your meal plan so you buy the right foods and avoid the ones that spike your glucose. Check off as you shop — one less thing to think about.</div></li>
+      <li><span class="ico">📊</span><div><strong>Track Your Progress</strong> — Log your blood sugar, weight, and how you feel. See your trends over time. The app shows you where you stand so you don&apos;t slip back. <strong>When you see the numbers move, you don&apos;t quit.</strong></div></li>
+      <li><span class="ico">📷</span><div><strong>Photos &amp; Evolution</strong> — Track your journey with photos and notes. See how your body and energy change over 90 days. Built for the motivation that comes from seeing real progress.</div></li>
+      <li><span class="ico">📚</span><div><strong>Learn Library + Weekly Report</strong> — Articles and guides on diabetes, nutrition, and habits that protect your health. Plus a weekly summary of your check-ins so you and your doctor can see progress. <strong>Knowledge and proof in one place.</strong></div></li>
+      <li><span class="ico">🎯</span><div><strong>90-Day Protocol — Not a Quick Fix</strong> — Designed with doctors and dietitians for real outcomes: <strong>better blood sugar, lower HbA1c, and fewer complications.</strong> This isn&apos;t a generic diet app. It&apos;s a structured program built for people with diabetes and prediabetes.</div></li>
+    </ul>
+
+    <p class="prose" style="margin-bottom:1.5rem">&quot;This isn&apos;t a generic health app,&quot; says Dr. Elena Rodriguez, endocrinologist and diabetes specialist. &quot;It&apos;s a protocol that can <strong>help you stabilize blood sugar, improve HbA1c, and feel more in control</strong>. The earlier you start, the more you can protect yourself — but we&apos;ve seen gains at every stage. The app gives you the recipes, the list, the tracking, and the support in one place. Thousands of users with diabetes or prediabetes use it every day.&quot;</p>
+
+    <figure>
+      <img src="/medico_shark_tank.png" alt="Doctor presenting DiabetesSharp app on smartphone" style="max-height:280px" />
+      <figcaption>A doctor presents the DiabetesSharp app. The 90-day protocol is now available to the public — no prescription required.</figcaption>
+    </figure>
+
+    <h2 style="text-align:center;margin-bottom:1rem">Before the Protocol vs. After 90 Days — Real Users</h2>
+    <div class="grid-2">
+      <figure>
+        <img src="/diabetic_foot_before.png" alt="Before: struggling with blood sugar and diet" />
+        <figcaption style="text-align:left;color:#4b5563;font-weight:500">Before — Uncontrolled numbers, confusion about what to eat, and fear of complications. Many people with diabetes have been there.</figcaption>
+      </figure>
+      <figure>
+        <img src="/diabetes_before_after_banner.png" alt="After 90 days: better control and more energy" />
+        <figcaption style="text-align:left;color:#4b5563;font-weight:500">After 90 days — Better blood sugar, clearer plan, and a sense of control. Real reports from DiabetesSharp users.</figcaption>
+      </figure>
+    </div>
+
+    <div class="results-wrap">
+      <h2>&quot;I Got My Blood Sugar Under Control&quot; — Real Results</h2>
+      <div class="grid-3">
+        <div class="card-w">
+          <div class="stat-big">-1.8</div>
+          <p class="stat-label">HbA1c points in 90 days</p>
+          <p style="font-weight:700;color:#111827;margin:0 0 0.5rem">Mary C., age 62</p>
+          <p style="font-size:0.875rem;color:#4b5563;margin:0 0 1rem">&quot;My HbA1c was 8.9. I was scared. I followed the meal plan and used the app every day. In 90 days I was at 7.1. I feel like myself again.&quot;</p>
+          <div style="color:#eab308">⭐⭐⭐⭐⭐</div>
+        </div>
+        <div class="card-w">
+          <div class="stat-big">-12 kg</div>
+          <p class="stat-label">Weight in 90 days</p>
+          <p style="font-weight:700;color:#111827;margin:0 0 0.5rem">John S., age 58</p>
+          <p style="font-size:0.875rem;color:#4b5563;margin:0 0 1rem">&quot;Prediabetes was a wake-up call. The recipes and list made it easy. I lost weight and my fasting glucose dropped. No more prediabetes.&quot;</p>
+          <div style="color:#eab308">⭐⭐⭐⭐⭐</div>
+        </div>
+        <div class="card-w">
+          <div class="stat-big">24/7</div>
+          <p class="stat-label">Support when I need it</p>
+          <p style="font-weight:700;color:#111827;margin:0 0 0.5rem">Ann L., age 65</p>
+          <p style="font-size:0.875rem;color:#4b5563;margin:0 0 1rem">&quot;Having someone to ask about meals and meds at any time changed everything. My doctor is happy with my numbers. I&apos;m not waiting anymore.&quot;</p>
+          <div style="color:#eab308">⭐⭐⭐⭐⭐</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fb-head">
+      <span class="fb-icon" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></span>
+      What people are saying on Facebook
+    </div>
+    <div class="fb-box">
+      <div class="fb-post-head">
+        <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=48&amp;h=48&amp;fit=crop" alt="" width="40" height="40" />
+        <div>
+          <p style="margin:0;font-weight:600;color:#111827;font-size:0.875rem">DiabetesSharp <span style="color:#1877f2">● Facebook</span></p>
+          <p style="margin:0;font-size:0.75rem;color:#6b7280">March 12 · Shared a link to the free diabetes risk assessment.</p>
+        </div>
+      </div>
+      <div class="fb-comments">
+        <div class="fb-comment">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&amp;h=48&amp;fit=crop" alt="" width="36" height="36" />
+          <div>
+            <p class="meta"><span style="font-weight:600;color:#111827">Jennifer Martinez</span> <span style="color:#6b7280">· 2h</span></p>
+            <p class="body">My dad has type 2 and was lost. We found DiabetesSharp and he's been using the recipes and the Q&amp;A every day. His HbA1c dropped. He finally understands what to eat. Thank you.</p>
+            <p class="actions">Like · Reply · 12</p>
+          </div>
+        </div>
+        <div class="fb-comment">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&amp;h=48&amp;fit=crop" alt="" width="36" height="36" />
+          <div>
+            <p class="meta"><span style="font-weight:600;color:#111827">Michael Thompson</span> <span style="color:#6b7280">· 5h</span></p>
+            <p class="body">My grandpa's blood sugar was all over the place. My mom got him on this app and within 2 months we saw a real difference. The shopping list and meal plan made it simple. Game changer.</p>
+            <p class="actions">Like · Reply · 12</p>
+          </div>
+        </div>
+        <div class="fb-comment">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&amp;h=48&amp;fit=crop" alt="" width="36" height="36" />
+          <div>
+            <p class="meta"><span style="font-weight:600;color:#111827">Linda Foster</span> <span style="color:#6b7280">· Yesterday at 8:42 PM</span></p>
+            <p class="body">After my mother was diagnosed with prediabetes she didn't know where to start. We tried DiabetesSharp and she loves it. Her fasting glucose is normal now. So grateful.</p>
+            <p class="actions">Like · Reply · 12</p>
+          </div>
+        </div>
+        <div class="fb-comment">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&amp;h=48&amp;fit=crop" alt="" width="36" height="36" />
+          <div>
+            <p class="meta"><span style="font-weight:600;color:#111827">David Chen</span> <span style="color:#6b7280">· Yesterday at 3:15 PM</span></p>
+            <p class="body">My father-in-law had type 2 and was scared of complications. He started the 90-day program and his numbers improved. He can enjoy meals again without guilt. This app really changed his life.</p>
+            <p class="actions">Like · Reply · 12</p>
+          </div>
+        </div>
+        <div class="fb-comment">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&amp;h=48&amp;fit=crop" alt="" width="36" height="36" />
+          <div>
+            <p class="meta"><span style="font-weight:600;color:#111827">Sarah Williams</span> <span style="color:#6b7280">· March 13 at 11:20 AM</span></p>
+            <p class="body">I put my mom on DiabetesSharp after her doctor said she had to change her diet. She's 72 and was really struggling. Now she has the recipes and someone to ask 24/7. Thank you!!!</p>
+            <p class="actions">Like · Reply · 12</p>
+          </div>
+        </div>
+        <div class="fb-comment">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&amp;h=48&amp;fit=crop" alt="" width="36" height="36" />
+          <div>
+            <p class="meta"><span style="font-weight:600;color:#111827">Robert Garcia</span> <span style="color:#6b7280">· March 12 at 6:55 PM</span></p>
+            <p class="body">My grandfather was pre-diabetic and didn't know what to eat. We got him on this and in 60 days his numbers were back in range. The free assessment showed his risk and the program was tailored for him. Highly recommend for anyone with diabetes or prediabetes.</p>
+            <p class="actions">Like · Reply · 12</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="live-box">
+      <p style="margin:0 0 0.5rem;font-size:1rem">People who took the free diabetes assessment in the last 24 hours:</p>
+      <p class="num">1,247</p>
+      <p style="margin:0.5rem 0 0;font-size:0.875rem;opacity:0.9">Don&apos;t wait. The earlier you act, the more you can protect your health.</p>
+    </div>
+
+    <div class="center-cta">
+      <a class="btn-lg" href="/quiz">🩸 CHECK MY DIABETES RISK — FREE ASSESSMENT (UNDER 30 SEC)</a>
+      <p class="cta-note">No credit card · Get your risk level and personalized recommendation</p>
+    </div>
+
+    <h2>Frequently Asked Questions</h2>
+    <details><summary>I already have type 2 diabetes. Can this still help?</summary><p>Yes. The program is designed for people with type 2 diabetes and prediabetes. It does not replace your doctor or medication, but many users report better blood sugar control, lower HbA1c, and more confidence with diet and daily habits. The free assessment helps you see your level and options.</p></details>
+    <details><summary>I have prediabetes. Is it too late to avoid diabetes?</summary><p>No. Research shows that many people with prediabetes can prevent or delay type 2 diabetes with the right diet and lifestyle. The earlier you start, the better. The free assessment helps you see where you stand and what to do next.</p></details>
+    <details><summary>Can the app replace my diabetes medication?</summary><p>No. The app supports your diet, tracking, and habits. It does not replace medication prescribed by your doctor. Always consult your doctor before making any changes to your treatment.</p></details>
+    <details><summary>How quickly will I see results?</summary><p>Many users notice better energy and more stable blood sugar within 2–3 weeks. Meaningful HbA1c improvement typically appears over 60–90 days with consistent use.</p></details>
+    <details><summary>Is my information secure?</summary><p>Yes. We use encryption and take your privacy seriously. Your health data is never sold or shared for marketing.</p></details>
+    <details><summary>Do I need special equipment?</summary><p>No. You only need a smartphone, tablet, or computer. If your doctor has recommended a glucometer, you can log your readings in the app.</p></details>
+    <details><summary>What if the program doesn&apos;t work for me?</summary><p>We offer a 7-day no-questions-asked money-back guarantee. If you&apos;re not satisfied, we refund 100%.</p></details>
+
+    <div class="story">
+      <h2>Our Story</h2>
+      <p>In 2022, Dr. Elena Rodriguez — an endocrinologist focused on diabetes care — noticed a disturbing pattern: patients in their 40s, 50s, and 60s were coming in with blood sugar out of control and no clear plan. The standard response was a prescription and a pamphlet. But Dr. Rodriguez knew the research: with the right diet, tracking, and support, many people can significantly improve their numbers and reduce the risk of complications.</p>
+      <p>She joined forces with Dr. James Mitchell (endocrinologist), nutritionists specializing in diabetes, and a team of engineers who had built health apps for chronic conditions.</p>
+      <p>Together they spent 18 months developing what would become DiabetesSharp — a program that combines the precision of clinical guidelines with the accessibility of a daily app. Today, DiabetesSharp has helped over 45,000 people in 32 countries improve their blood sugar control and feel more confident with their diet and routine — including many who already had type 2 or prediabetes and saw real improvement.</p>
+    </div>
+
+    <div class="final-cta">
+      <h2>Take Control Now — Whether You Have Prediabetes or Type 2.</h2>
+      <p class="sub"><strong>37 million Americans</strong> have diabetes. <strong>96 million</strong> have prediabetes. The 90-day protocol helps you <strong>stabilize blood sugar, improve your numbers, and reduce the risk of complications</strong>. Take the free assessment (under 30 seconds), get your risk level, and see what&apos;s possible. 7-day guarantee.</p>
+      <a class="btn-lg" href="/quiz">🩸 CHECK MY RISK NOW — FREE ASSESSMENT (UNDER 30 SEC)</a>
+      <p class="fine">7-day money-back guarantee · No credit card to start</p>
+    </div>
+  </article>
+
+  <footer>
+    <div class="foot-inner">
+      <div class="foot-grid">
+        <div>
+          <a href="/home" class="foot-brand">
+            <img src="/diabetessharp-logo.png" alt="DiabetesSharp" width="32" height="32" />
+            <span>DiabetesSharp</span>
+          </a>
+          <ul>
+            <li><a href="#content">About</a></li>
+            <li><a href="#content">Blog</a></li>
+            <li><a href="#content">Research</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Support</h3>
+          <ul>
+            <li><a href="/contact">Contact</a></li>
+            <li><a href="#content">FAQ</a></li>
+            <li><a href="/refund-policy">Guarantee</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Legal</h3>
+          <ul>
+            <li><a href="/privacy">Privacy</a></li>
+            <li><a href="/terms">Terms</a></li>
+            <li><a href="#content">Cookies</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Connect</h3>
+          <ul>
+            <li><a href="#content">LinkedIn</a></li>
+            <li><a href="#content">Twitter</a></li>
+            <li><a href="#content">Instagram</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="foot-copy">&copy; 2026 DiabetesSharp. All rights reserved.</div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ds-bg: #f8f9fc;
+  --color-ds-surface: #ffffff;
+  --color-ds-primary: #6c5ce7;
+  --color-ds-text: #1a1d2e;
+  --color-ds-muted: #6b7280;
+  --color-ds-success: #10b981;
+  --color-ds-warning: #f59e0b;
+  --color-ds-error: #ef4444;
+  --color-ds-border: #e5e7eb;
+
+  /* Superfícies suaves para cards de atalho (harmonia com primário #6C5CE7) */
+  --color-ds-soft-violet: #f5f3ff;
+  --color-ds-soft-violet-border: #e9e4f9;
+  --color-ds-soft-violet-icon: #5b4fcf;
+  --color-ds-soft-indigo: #eef2ff;
+  --color-ds-soft-indigo-border: #e0e7ff;
+  --color-ds-soft-indigo-icon: #4f46e5;
+  --color-ds-soft-emerald: #ecfdf5;
+  --color-ds-soft-emerald-border: #d1fae5;
+  --color-ds-soft-emerald-icon: #059669;
+  --color-ds-soft-amber: #fffbeb;
+  --color-ds-soft-amber-border: #fde68a;
+  --color-ds-soft-amber-icon: #b45309;
+  --color-ds-soft-sky: #f0f9ff;
+  --color-ds-soft-sky-border: #bae6fd;
+  --color-ds-soft-sky-icon: #0369a1;
+
+  --radius-ds-card: 12px;
+  --radius-ds-btn: 8px;
+
+  --shadow-ds: 0 1px 3px rgb(0 0 0 / 0.04);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    @apply m-0 min-h-screen bg-ds-bg text-ds-text antialiased;
+  }
+
+  :where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--color-ds-primary);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .shadow-ds {
+    box-shadow: var(--shadow-ds);
+  }
+
+  .rounded-ds-card {
+    border-radius: var(--radius-ds-card);
+  }
+
+  .rounded-ds-btn {
+    border-radius: var(--radius-ds-btn);
+  }
+
+  /* Único gradiente permitido: CTA principal */
+  .bg-cta-gradient {
+    background-image: linear-gradient(135deg, #6c5ce7 0%, #5548d9 55%, #4834b8 100%);
+  }
+}

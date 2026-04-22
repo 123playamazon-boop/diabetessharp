@@ -1,0 +1,107 @@
+route_path,http_method,server_auth_enforced,expected_role,current_protection,risk_level,notes
+/health,GET,no,public,none,low,Liveness; no sensitive data.
+/api/client/register,POST,no,public,none,medium,Abuse/spam; KYC blobs; no CAPTCHA in server.
+/api/client/login,POST,no,public,none,medium,Brute-force risk; no rate limit in code reviewed.
+/api/client/me,GET,no,client,none,high,Suite query only; any caller can read any suite profile.
+/api/client/orders,GET,no,client,none,high,Suite query; cross-tenant read if suite guessed.
+/api/client/orders,POST,no,client,none,high,Creates order for body.suite without auth binding.
+/api/client/orders/:id,PATCH,no,client,none,medium,Validates suite matches order; still no caller auth.
+/api/client/orders/:id,DELETE,no,client,none,medium,Same suite check as PATCH.
+/api/admin/client-orders,GET,no,admin,none,critical,Lists ALL orders; no admin auth.
+/api/admin/client-orders/:id,PATCH,no,admin,none,critical,Arbitrary order mutation; no admin auth.
+/api/admin/client-orders/:id/prep-kit-deliver,POST,no,admin,none,critical,Inventory credit + close; no admin auth.
+/api/client/wallet/adjust,POST,no,client,none,critical,Adjusts balance by suite; wallet fraud / theft.
+/api/client/wallet/ledger,GET,no,client,none,high,Reads ledger by suite query; no caller auth.
+/api/admin/wallet/ledger,GET,no,admin,none,critical,Reads any suite ledger via query; no admin auth.
+/api/admin/demo/full-reset,POST,no,admin,none,critical,Destructive demo reset; unauthenticated.
+/api/admin/clients,GET,no,admin,none,critical,PII dump all clients; no admin auth.
+/api/admin/clients/:suite,DELETE,no,admin,none,critical,Deletes client; no admin auth.
+/api/admin/clients/:suite,PATCH,no,admin,none,critical,Updates client; no admin auth.
+/api/admin/clients/:suite/password,POST,no,admin,none,critical,Sets password; no admin auth.
+/api/admin/clients/:suite/premium,POST,no,admin,none,critical,Toggles premium; no admin auth.
+/api/admin/clients/:suite/amazon-leads-pro,POST,no,admin,none,critical,Subscription flag; no admin auth.
+/api/admin/clients/:suite/reprice-pro,POST,no,admin,none,critical,Subscription flag; no admin auth.
+/api/admin/clients/:suite/kyc-docs,GET,no,admin,none,critical,Sensitive KYC payload; no admin auth.
+/api/admin/clients/:suite/approve,POST,no,admin,none,critical,KYC approval; no admin auth.
+/api/client/inventory,GET,no,client,none,critical,Returns GLOBAL inventory snapshot; cross-tenant leak.
+/api/client/inventory/additions,POST,no,client,none,critical,Appends row; no suite ownership check on server.
+/api/client/inventory/additions/:id,PATCH,no,client,none,critical,Patches any row id globally.
+/api/client/inventory/deductions,POST,no,client,none,critical,Global deductions mutation.
+/api/client/inventory/deductions/remove,POST,no,client,none,critical,Global deduction removal.
+/api/shipping-label/parse,POST,no,public,none,medium,CPU/PDF abuse; URL not fetched but base64 heavy.
+/api/shipping-tracking/lookup,POST,no,public,none,medium,External API cost/abuse; uses carrier+tracking.
+/api/client/inventory/bootstrap,POST,no,client,none,high,Seeds inventory when empty; global state.
+/api/admin/inventory/additions/:id/confirm-receipt,POST,no,admin,none,critical,Receipt confirm + emails; no admin auth.
+/api/admin/orders/accept-production,POST,no,admin,none,critical,Order ops; no admin auth.
+/api/admin/orders/notify-shipped,POST,no,admin,none,critical,Notify shipped; no admin auth.
+/api/scrape,POST,no,public,none,medium,Server-side fetch; assertSafePublicUrl mitigates SSRF.
+/api/client/bundles,POST,no,client,none,high,createBundle checks findBySuite(suite) but no caller proof.
+/api/client/bundles,GET,no,client,none,high,Lists bundles by suite query.
+/api/client/bundles/:id,GET,no,client,none,high,Gets bundle by id+suite query.
+/api/client/bundle-orders,POST,no,client,none,high,Creates order; wallet/inventory side effects.
+/api/client/bundle-orders,GET,no,client,none,high,Lists orders by suite query.
+/api/client/bundle-orders/:id,GET,no,client,none,medium,Order detail; suite must match in store.
+/api/admin/bundle-orders,GET,no,admin,none,critical,Admin list; no auth.
+/api/admin/bundle-orders/:id/status,PATCH,no,admin,none,critical,Status workflow; no auth.
+/api/admin/bundle-orders/:id/complete,POST,no,admin,none,critical,Completes + inventory; no auth.
+/api/admin/bundle-orders/:id/meta,PATCH,no,admin,none,high,Meta patch; no auth.
+/api/client/growth-program/subscribe-growth-program,POST,no,client,none,high,Charges wallet; suite in body.
+/api/client/growth-program/subscribe,POST,no,client,none,high,Alias of subscribe handler.
+/api/client/growth-program/subscription-status,GET,no,client,none,high,suite query.
+/api/client/growth-program/revenue-report,GET,no,client,none,high,suite query financial data.
+/api/client/growth-program/service-request,POST,no,client,none,high,suite in body.
+/api/client/growth-program/landing-content,GET,no,public,none,low,Public marketing overrides JSON.
+/api/client/growth-program/conversion-event,POST,no,public,none,low,Analytics; spam possible.
+/api/client/growth-program/lead-intake,POST,no,public,none,medium,Lead spam / storage DoS without rate limit.
+/api/client/growth-program/dashboard,GET,no,client,none,high,suite query dashboard payload.
+/api/admin/growth-program/subscriptions,GET,no,admin,none,critical,All subscriptions; no auth.
+/api/admin/growth-program/snapshot,GET,no,admin,none,critical,Full growth snapshot incl leads; no auth.
+/api/admin/growth-program/lead-intakes,GET,no,admin,none,critical,All CRM leads; no auth.
+/api/admin/growth-program/lead-intakes/:id,PATCH,no,admin,none,critical,Patch lead CRM; no auth.
+/api/admin/growth-program/landing-copy,GET,no,admin,none,high,Landing overrides; no auth.
+/api/admin/growth-program/landing-copy,PATCH,no,admin,none,high,Mutate overrides; no auth.
+/api/admin/growth-program/revenue-entry,POST,no,admin,none,critical,Financial write; no auth.
+/api/admin/growth-program/revenue-import-csv,POST,no,admin,none,critical,Bulk financial import; no auth.
+/api/admin/growth-program/profit-share/pay,PATCH,no,admin,none,critical,Mark profit paid; no auth.
+/api/admin/growth-program/tasks,POST,no,admin,none,high,Create task; no auth.
+/api/admin/growth-program/tasks/:id,PATCH,no,admin,none,high,Patch task; no auth.
+/api/admin/growth-program/subscriptions/:id,PATCH,no,admin,none,critical,Subscription lifecycle; no auth.
+/api/admin/growth-program/audit,GET,no,admin,none,high,Audit log; no auth.
+/api/admin/growth-program/billing/run-due,POST,no,admin,none,critical,Wallet charges across tenants; no auth.
+/api/client/assisted-purchases,POST,no,client,none,high,Creates assisted purchase for suite in body.
+/api/client/assisted-purchases,GET,no,client,none,high,Lists by suite query.
+/api/client/assisted-purchases/:id/approve,POST,no,client,none,high,Client approve flow.
+/api/client/assisted-purchases/:id/cancel,POST,no,client,none,high,Cancel flow.
+/api/client/assisted-purchases/:id,GET,no,client,none,medium,Detail by id+suite query.
+/api/admin/assisted-purchases,GET,no,admin,none,critical,Admin list all assisted purchases.
+/api/admin/assisted-purchases/:id/refresh-link,POST,no,admin,none,high,Scrape refresh; no auth.
+/api/admin/assisted-purchases/:id/checklist,PATCH,no,admin,none,high,Ops checklist; no auth.
+/api/admin/assisted-purchases/:id/notify-client,POST,no,admin,none,medium,Notification; no auth.
+/api/admin/assisted-purchases/:id/review,PATCH,no,admin,none,high,Review state; no auth.
+/api/admin/assisted-purchases/:id/update-price,PATCH,no,admin,none,high,Price update; no auth.
+/api/admin/assisted-purchases/:id/purchase,POST,no,admin,none,critical,Purchase execution + wallet; no auth.
+/api/client/support-ticket,POST,no,client,none,medium,Creates ticket; likely suite in body.
+/api/admin/support-tickets,GET,no,admin,none,critical,All tickets; no auth.
+/api/client/support-tickets,GET,no,client,none,high,suite query list.
+/api/admin/support-tickets/:id/reply,POST,no,admin,none,high,Reply; no auth.
+/api/admin/support-tickets/:id,PATCH,no,admin,none,high,Patch ticket; no auth.
+/api/client/vip-announcements,GET,no,client,none,medium,suite query; findBySuite.
+/api/admin/vip-announcements,GET,no,admin,none,high,All announcements; no auth.
+/api/admin/vip-announcements,POST,no,admin,none,high,Create announcement; no auth.
+/api/admin/vip-announcements/:id,PATCH,no,admin,none,high,Patch; no auth.
+/api/admin/vip-announcements/:id,DELETE,no,admin,none,high,Delete; no auth.
+/api/client/vip-store/catalog,GET,no,public,none,low,Product catalog JSON.
+/api/client/vip-store/orders,GET,no,client,none,high,suite query orders.
+/api/client/vip-store/checkout,POST,no,client,none,high,Charges wallet; suite in body.
+/api/admin/vip-store,GET,no,admin,none,critical,Store+orders admin; no auth.
+/api/admin/vip-store/preview-import,POST,no,admin,none,medium,Import preview; no auth.
+/api/admin/vip-store/settings,PATCH,no,admin,none,high,Fee settings; no auth.
+/api/admin/vip-store/products,POST,no,admin,none,high,Create product; no auth.
+/api/admin/vip-store/products/:id,PATCH,no,admin,none,high,Patch product; no auth.
+/api/admin/vip-store/orders/:id,PATCH,no,admin,none,high,Patch order; no auth.
+/api/admin/vip-store/orders/:id/refund,POST,no,admin,none,critical,Refund wallet; no auth.
+/api/client/amazon-leads/analyze,POST,no,public,none,low,Hard-disabled 403.
+/api/client/amazon-leads/daily,GET,no,client,none,medium,suite query; unsubscribed returns marketing payload.
+/api/admin/amazon-leads/editions,GET,no,admin,none,high,Editions meta; no auth.
+/api/admin/amazon-leads/spreadsheet-upload,POST,no,admin,none,high,File upload; no auth.
+/api/admin/amazon-leads/publish,POST,no,admin,none,critical,Keepa spend + publish; no auth.

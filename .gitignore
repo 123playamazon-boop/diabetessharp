@@ -26,3 +26,6 @@ npm-debug.log*
 # editor
 .vscode
 .idea
+
+# DBX Novo (prep center) — dados locais da demo
+dbx-novo/server/data/*.json

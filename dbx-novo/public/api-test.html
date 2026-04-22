@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DBX — teste da API</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 42rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      code {
+        background: #f2f2f2;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+      }
+      pre {
+        background: #1e1e1e;
+        color: #e4e4e4;
+        padding: 1rem;
+        border-radius: 8px;
+        overflow: auto;
+        font-size: 0.85rem;
+      }
+      .ok {
+        color: #0a7;
+      }
+      .err {
+        color: #c32;
+      }
+      button {
+        margin: 0.25rem 0.5rem 0.25rem 0;
+        padding: 0.4rem 0.75rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Teste da API DBX</h1>
+    <p>
+      Abre esta página com o dev server a correr: na pasta <code>dbx-novo</code> executa
+      <code>npm run dev</code> (API + Vite). Depois usa este URL:
+    </p>
+    <p><strong id="self-link"></strong></p>
+    <p class="err" id="hint-offline" hidden>
+      Se os botões falharem com «502» ou rede, a API Express não está a responder em
+      <code>127.0.0.1:8787</code> — confirma que o terminal mostra o scrape-server a iniciar.
+    </p>
+    <p>
+      <button type="button" id="btn-health">GET /health</button>
+      <button type="button" id="btn-landing">GET growth landing</button>
+      <button type="button" id="btn-vip">GET VIP catálogo</button>
+    </p>
+    <p id="status"></p>
+    <pre id="out">(clica num botão)</pre>
+    <script>
+      document.getElementById("self-link").textContent = location.href;
+
+      async function hit(path) {
+        const statusEl = document.getElementById("status");
+        const out = document.getElementById("out");
+        const hint = document.getElementById("hint-offline");
+        statusEl.textContent = "A pedir…";
+        out.textContent = "";
+        hint.hidden = true;
+        try {
+          const res = await fetch(path);
+          const text = await res.text();
+          let body = text;
+          try {
+            body = JSON.stringify(JSON.parse(text), null, 2);
+          } catch (_) {}
+          statusEl.innerHTML =
+            res.ok
+              ? '<span class="ok">HTTP ' + res.status + " OK</span>"
+              : '<span class="err">HTTP ' + res.status + "</span>";
+          out.textContent = body;
+          if (res.status === 502) hint.hidden = false;
+        } catch (e) {
+          statusEl.innerHTML = '<span class="err">Erro de rede (servidor parado?)</span>';
+          out.textContent = String(e);
+          hint.hidden = false;
+        }
+      }
+
+      document.getElementById("btn-health").onclick = () => hit("/health");
+      document.getElementById("btn-landing").onclick = () => hit("/api/client/growth-program/landing-content");
+      document.getElementById("btn-vip").onclick = () => hit("/api/client/vip-store/catalog");
+    </script>
+  </body>
+</html>

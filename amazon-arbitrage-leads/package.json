@@ -1,0 +1,17 @@
+{
+  "name": "amazon-arbitrage-leads",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Filtra ASINs (Keepa API) para arbitragem Amazon US — export CSV estilo Direct Box.",
+  "scripts": {
+    "build": "tsc",
+    "run": "tsx src/cli.ts",
+    "dry": "tsx src/cli.ts --dry-run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.6.2"
+  }
+}

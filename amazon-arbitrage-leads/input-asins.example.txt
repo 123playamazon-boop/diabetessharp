@@ -1,0 +1,4 @@
+# Copie para input-asins.txt — um ASIN por linha (Amazon.com).
+# Estes são exemplos; substitua por ASINs que queira filtrar (ex.: vinda de outra ferramenta ou lista manual).
+# B086PFMB6M
+# B071X5YSSR

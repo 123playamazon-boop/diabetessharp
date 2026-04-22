@@ -1,0 +1,336 @@
+import type { Express, Request, Response } from "express";
+import { requireUser, userSuite } from "./authMiddleware";
+import {
+  type ProductHunterCompetition,
+  type ProductHunterDemand,
+  type ProductHunterExperienceLevel,
+  type ProductHunterIdea,
+  type ProductHunterMarketplaceId,
+  type ProductHunterResult,
+  buildDemoProductHunter,
+  isProductHunterCandidateStatus,
+  isProductHunterExperienceLevel,
+  isProductHunterMarketplaceId,
+} from "../shared/productHunter";
+import {
+  deleteCandidate,
+  listCandidatesBySuite,
+  patchCandidate,
+  readAllCandidates,
+  saveCandidate,
+} from "./productHunterCandidateStore";
+
+const MAX_BUDGET_LEN = 200;
+
+const PRODUCT_HUNTER_SYSTEM = `You are Product Hunter AI — a senior US e-commerce analyst for Direct Box USA.
+
+The user is an e-commerce seller evaluating what to sell next on US marketplaces. Inputs: budget (free text), target marketplace (one of: amazon_us, walmart_us, tiktok_shop_us, shopify, ebay_us), experience level (beginner | intermediate | advanced).
+
+Output ONLY valid JSON:
+{
+  "summary": "2-3 sentences: analytical read of the opportunity set for this profile; no hype; decision-oriented English.",
+  "products": [
+    {
+      "idea": "concise product concept (not a brand name; category + angle)",
+      "demandLevel": "high" | "medium" | "low",
+      "competitionLevel": "high" | "medium" | "low",
+      "estimatedProfitMargin": "string like 18–28% or numeric range; honest band, not a guarantee",
+      "bestMarketplace": "single best primary marketplace name in English (e.g. Amazon USA)",
+      "logisticsFeasibility": "2-4 sentences: size/weight/inbound complexity/returns risk",
+      "whyTrending": "2-4 sentences: demand drivers, search/social signals, category cycle — factual tone",
+      "sellingStrategy": "3-5 sentences: positioning, pricing discipline, listing/promo angle for the chosen marketplace",
+      "opportunityScore": integer 0-100
+    }
+  ]
+}
+
+Rules:
+- Return exactly 5 products, each with all fields.
+- Rank products by opportunityScore descending in the array (highest first).
+- opportunityScore must reflect profitability potential, scalability, ease of entry for the experience level, and fit to the selected marketplace — not hype.
+- demandLevel and competitionLevel must be consistent with the narrative.
+- Do not invent trademarked brand names or claim verified sales data you do not have; speak in category/strategy terms.
+- No markdown fences.`;
+
+type HunterBody = {
+  budget?: string;
+  marketplace?: string;
+  experienceLevel?: string;
+};
+
+function clampScore(n: number): number {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function coerceDemand(v: unknown): ProductHunterDemand {
+  return v === "high" || v === "medium" || v === "low" ? v : "medium";
+}
+
+function coerceCompetition(v: unknown): ProductHunterCompetition {
+  return v === "high" || v === "medium" || v === "low" ? v : "medium";
+}
+
+function normalizeProductHunterIdeaFromUnknown(item: unknown): ProductHunterIdea | null {
+  if (!item || typeof item !== "object") return null;
+  const o = item as Record<string, unknown>;
+  const idea = typeof o.idea === "string" ? o.idea.trim() : "";
+  const estimatedProfitMargin = typeof o.estimatedProfitMargin === "string" ? o.estimatedProfitMargin.trim() : "";
+  const bestMarketplace = typeof o.bestMarketplace === "string" ? o.bestMarketplace.trim() : "";
+  const logisticsFeasibility = typeof o.logisticsFeasibility === "string" ? o.logisticsFeasibility.trim() : "";
+  const whyTrending = typeof o.whyTrending === "string" ? o.whyTrending.trim() : "";
+  const sellingStrategy = typeof o.sellingStrategy === "string" ? o.sellingStrategy.trim() : "";
+  if (!idea || !estimatedProfitMargin || !bestMarketplace || !logisticsFeasibility || !whyTrending || !sellingStrategy) return null;
+  return {
+    idea: idea.slice(0, 500),
+    demandLevel: coerceDemand(o.demandLevel),
+    competitionLevel: coerceCompetition(o.competitionLevel),
+    estimatedProfitMargin: estimatedProfitMargin.slice(0, 80),
+    bestMarketplace: bestMarketplace.slice(0, 120),
+    logisticsFeasibility: logisticsFeasibility.slice(0, 1200),
+    whyTrending: whyTrending.slice(0, 1200),
+    sellingStrategy: sellingStrategy.slice(0, 1200),
+    opportunityScore: clampScore(typeof o.opportunityScore === "number" ? o.opportunityScore : Number(o.opportunityScore)),
+  };
+}
+
+function parseProductHunterJson(raw: string): ProductHunterResult | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const root = parsed as Record<string, unknown>;
+  const arr = root.products;
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const products: ProductHunterIdea[] = [];
+  for (const item of arr) {
+    const row = normalizeProductHunterIdeaFromUnknown(item);
+    if (!row) continue;
+    products.push(row);
+    if (products.length >= 8) break;
+  }
+  if (products.length < 3) return null;
+  products.sort((a, b) => b.opportunityScore - a.opportunityScore);
+  const summary = typeof root.summary === "string" ? root.summary.trim().slice(0, 800) : undefined;
+  return { products: products.slice(0, 8), summary: summary || undefined };
+}
+
+async function callOpenAiProductHunter(
+  budget: string,
+  marketplace: ProductHunterMarketplaceId,
+  experience: ProductHunterExperienceLevel,
+): Promise<ProductHunterResult | null> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) return null;
+  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const userPayload = {
+    budget,
+    marketplace,
+    experienceLevel: experience,
+    instruction:
+      "Generate 5 ranked opportunities. English. Analytical, business-focused, decision-making oriented. No fluff.",
+  };
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.35,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: PRODUCT_HUNTER_SYSTEM },
+        { role: "user", content: JSON.stringify(userPayload) },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`OpenAI HTTP ${res.status}: ${errText.slice(0, 400)}`);
+  }
+  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  const raw = data.choices?.[0]?.message?.content?.trim();
+  if (!raw) return null;
+  return parseProductHunterJson(raw);
+}
+
+export function registerProductHunterRoutes(app: Express): void {
+  app.post("/api/client/product-hunter", requireUser, async (req: Request, res: Response) => {
+    const b = (req.body && typeof req.body === "object" ? req.body : {}) as HunterBody;
+    const budget = typeof b.budget === "string" ? b.budget.trim() : "";
+    const marketplaceRaw = typeof b.marketplace === "string" ? b.marketplace.trim() : "";
+    const experienceRaw = typeof b.experienceLevel === "string" ? b.experienceLevel.trim() : "";
+
+    if (!budget) {
+      res.status(400).json({ error: "Indique o orçamento (budget)." });
+      return;
+    }
+    if (budget.length > MAX_BUDGET_LEN) {
+      res.status(400).json({ error: "Orçamento demasiado longo." });
+      return;
+    }
+    if (!isProductHunterMarketplaceId(marketplaceRaw)) {
+      res.status(400).json({ error: "Marketplace inválido.", validMarketplaces: ["amazon_us", "walmart_us", "tiktok_shop_us", "shopify", "ebay_us"] });
+      return;
+    }
+    if (!isProductHunterExperienceLevel(experienceRaw)) {
+      res.status(400).json({ error: "Nível de experiência inválido.", validLevels: ["beginner", "intermediate", "advanced"] });
+      return;
+    }
+    const marketplace = marketplaceRaw as ProductHunterMarketplaceId;
+    const experience = experienceRaw as ProductHunterExperienceLevel;
+
+    const runDemo = (): ProductHunterResult => buildDemoProductHunter(budget, marketplace, experience);
+
+    if (process.env.OPENAI_API_KEY?.trim()) {
+      try {
+        const ai = await callOpenAiProductHunter(budget, marketplace, experience);
+        if (ai) {
+          res.json({ ok: true, mode: "live", hunter: ai });
+          return;
+        }
+      } catch (e) {
+        res.json({
+          ok: true,
+          mode: "demo",
+          hunter: runDemo(),
+          warn: e instanceof Error ? e.message.slice(0, 240) : "openai_error",
+        });
+        return;
+      }
+    }
+
+    res.json({ ok: true, mode: "demo", hunter: runDemo() });
+  });
+
+  const MAX_CANDIDATE_IDEAS = 8;
+
+  app.post("/api/client/product-hunter/candidates", requireUser, (req: Request, res: Response) => {
+    const suite = userSuite(req);
+    const b = req.body && typeof req.body === "object" ? (req.body as Record<string, unknown>) : {};
+    const rawIdeas = b.ideas;
+    if (!Array.isArray(rawIdeas)) {
+      res.status(400).json({ error: "Envie «ideas» como array." });
+      return;
+    }
+    if (rawIdeas.length === 0) {
+      res.status(400).json({ error: "Indique pelo menos uma ideia." });
+      return;
+    }
+    if (rawIdeas.length > MAX_CANDIDATE_IDEAS) {
+      res.status(400).json({ error: `No máximo ${MAX_CANDIDATE_IDEAS} ideias por pedido.` });
+      return;
+    }
+    const rawSource = b.source;
+    let source: "hunter_run" | "manual" = "hunter_run";
+    if (rawSource !== undefined && rawSource !== null) {
+      if (rawSource !== "hunter_run" && rawSource !== "manual") {
+        res.status(400).json({ error: "Origem inválida. Use «hunter_run» ou «manual»." });
+        return;
+      }
+      source = rawSource;
+    }
+    const normalized: ProductHunterIdea[] = [];
+    for (const item of rawIdeas) {
+      const row = normalizeProductHunterIdeaFromUnknown(item);
+      if (!row) {
+        res.status(400).json({ error: "Uma ou mais ideias são inválidas ou incompletas." });
+        return;
+      }
+      normalized.push(row);
+    }
+    const saved = normalized.map((idea) => saveCandidate(suite, idea, source));
+    res.json({ ok: true, saved });
+  });
+
+  app.get("/api/client/product-hunter/candidates", requireUser, (req: Request, res: Response) => {
+    const suite = userSuite(req);
+    const candidates = listCandidatesBySuite(suite);
+    res.json({ ok: true, candidates });
+  });
+
+  app.patch("/api/client/product-hunter/candidates/:id", requireUser, (req: Request, res: Response) => {
+    const suite = userSuite(req);
+    const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
+    if (!id) {
+      res.status(400).json({ error: "Identificador em falta." });
+      return;
+    }
+    const all = readAllCandidates();
+    const row = all.find((c) => c.id === id);
+    if (!row) {
+      res.status(404).json({ error: "Candidato não encontrado." });
+      return;
+    }
+    if (row.suite !== suite) {
+      res.status(403).json({ error: "Este candidato pertence a outra conta." });
+      return;
+    }
+    const b = req.body && typeof req.body === "object" ? (req.body as Record<string, unknown>) : {};
+    const patchRaw = b.patch;
+    if (!patchRaw || typeof patchRaw !== "object") {
+      res.status(400).json({ error: "Envie «patch» como objeto." });
+      return;
+    }
+    const p = patchRaw as Record<string, unknown>;
+    const hasStatus = Object.prototype.hasOwnProperty.call(p, "status");
+    const hasNotes = Object.prototype.hasOwnProperty.call(p, "notes");
+    if (!hasStatus && !hasNotes) {
+      res.status(400).json({ error: "O patch está vazio. Indique «status» e/ou «notes»." });
+      return;
+    }
+    const patch: { status?: typeof row.status; notes?: string } = {};
+    if (hasStatus) {
+      if (!isProductHunterCandidateStatus(p.status)) {
+        res.status(400).json({ error: "Estado inválido.", validStatuses: ["saved", "testing", "launched", "rejected"] });
+        return;
+      }
+      patch.status = p.status;
+    }
+    if (hasNotes) {
+      if (typeof p.notes !== "string") {
+        res.status(400).json({ error: "«notes» deve ser texto." });
+        return;
+      }
+      patch.notes = p.notes;
+    }
+    const updated = patchCandidate(suite, id, patch);
+    if (!updated) {
+      res.status(404).json({ error: "Candidato não encontrado." });
+      return;
+    }
+    res.json({ ok: true, candidate: updated });
+  });
+
+  app.delete("/api/client/product-hunter/candidates/:id", requireUser, (req: Request, res: Response) => {
+    const suite = userSuite(req);
+    const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
+    if (!id) {
+      res.status(400).json({ error: "Identificador em falta." });
+      return;
+    }
+    const all = readAllCandidates();
+    const row = all.find((c) => c.id === id);
+    if (!row) {
+      res.status(404).json({ error: "Candidato não encontrado." });
+      return;
+    }
+    if (row.suite !== suite) {
+      res.status(403).json({ error: "Este candidato pertence a outra conta." });
+      return;
+    }
+    const ok = deleteCandidate(suite, id);
+    if (!ok) {
+      res.status(404).json({ error: "Candidato não encontrado." });
+      return;
+    }
+    res.json({ ok: true });
+  });
+}

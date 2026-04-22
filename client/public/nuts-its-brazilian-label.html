@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nuts It's Brazilian — Print Label (LX4000)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,600;0,700;1,600&family=Pacifico&display=swap" rel="stylesheet" />
+  <style>
+    /* === LX4000 / dye ink: use "Print backgrounds" in the print dialog === */
+    /* Default die: 3.5" × 6" portrait — adjust @page and .label if your roll/stock differs */
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #1a1f1a; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      font-family: "DM Sans", system-ui, sans-serif;
+    }
+
+    .screen-hint {
+      max-width: 22rem;
+      color: #c8d4c8;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .screen-hint h2 { color: #fff; font-size: 1rem; margin: 0 0 0.5rem; }
+    .screen-hint ul { margin: 0.5rem 0 0; padding-left: 1.2rem; }
+
+    .label {
+      width: 3.5in;
+      height: 6in;
+      position: relative;
+      overflow: hidden;
+      background: #1e3d2f;
+      color: #f4ecd8;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+      /* subtle paper grain for dye ink — prints as light noise */
+      background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    }
+
+    .brazil-silhouette {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0.12;
+    }
+    .brazil-silhouette svg {
+      width: 72%;
+      height: auto;
+      fill: #0d2818;
+    }
+
+    .corner-art {
+      position: absolute;
+      width: 1.15in;
+      height: 1.15in;
+      opacity: 0.92;
+      pointer-events: none;
+    }
+    .corner-art.tr { top: 0.12in; right: 0.08in; }
+    .corner-art.bl { bottom: 2.05in; left: 0.06in; transform: rotate(-12deg); }
+
+    .content {
+      position: relative;
+      z-index: 2;
+      padding: 0.28in 0.32in 0.22in;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.2in;
+    }
+
+    .kosher {
+      width: 0.38in;
+      height: 0.38in;
+      border: 2px solid #f4ecd8;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.2in;
+      flex-shrink: 0;
+    }
+
+    .sell-by {
+      text-align: right;
+      font-size: 0.11in;
+      letter-spacing: 0.04em;
+      line-height: 1.35;
+      color: rgba(244, 236, 216, 0.9);
+    }
+    .sell-by .line {
+      border-bottom: 1px solid rgba(244, 236, 216, 0.55);
+      min-width: 1.1in;
+      display: inline-block;
+      margin-top: 0.04in;
+    }
+
+    .brand {
+      font-family: "Pacifico", cursive;
+      font-size: 0.38in;
+      color: #ff7a2e;
+      text-align: center;
+      margin: 0.06in 0 0;
+      line-height: 1.1;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+    }
+
+    .premium-row {
+      text-align: center;
+      margin-top: 0.06in;
+    }
+    .premium-row .dash {
+      font-size: 0.1in;
+      letter-spacing: 0.28em;
+      font-weight: 600;
+      color: rgba(244, 236, 216, 0.75);
+    }
+    .product-title {
+      font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+      font-size: 0.52in;
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+      text-align: center;
+      margin: 0.02in 0 0;
+      color: #f4ecd8;
+    }
+
+    .hook-primary {
+      text-align: center;
+      font-size: 0.125in;
+      font-weight: 700;
+      font-style: italic;
+      letter-spacing: 0.06em;
+      margin: 0.14in 0.15in 0.06in;
+      line-height: 1.35;
+      color: #fff8e8;
+    }
+    .hook-secondary {
+      text-align: center;
+      font-size: 0.095in;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin: 0 0.12in 0.08in;
+      line-height: 1.4;
+      color: rgba(255, 248, 232, 0.92);
+    }
+    .hook-secondary span[lang="pt"] {
+      display: block;
+      margin-top: 0.05in;
+      font-weight: 500;
+      font-size: 0.09in;
+      letter-spacing: 0.02em;
+      color: rgba(255, 213, 74, 0.95);
+    }
+
+    .cashew-icon-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 0.06in 0;
+    }
+    .cashew-icon-wrap svg { width: 0.55in; height: auto; opacity: 0.95; }
+
+    .variant {
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.16in;
+      letter-spacing: 0.12em;
+      margin: 0.04in 0 0;
+    }
+
+    .net-wt {
+      text-align: center;
+      font-size: 0.11in;
+      letter-spacing: 0.08em;
+      margin-top: 0.08in;
+      color: rgba(244, 236, 216, 0.88);
+    }
+
+    .hooks-grid {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.06in;
+      padding: 0.1in 0.06in;
+      background: rgba(45, 28, 18, 0.92);
+      border-radius: 0.06in;
+    }
+    .hook-cell {
+      text-align: center;
+      font-size: 0.085in;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: 0.03em;
+      color: #f4ecd8;
+      padding: 0.04in 0.02in;
+    }
+    .hook-cell svg {
+      width: 0.36in;
+      height: 0.36in;
+      margin: 0 auto 0.05in;
+      display: block;
+    }
+
+    .footer-band {
+      margin-top: 0.1in;
+      background: linear-gradient(180deg, #2d7a4a 0%, #1f5c36 100%);
+      border-radius: 0.06in;
+      padding: 0.1in 0.12in;
+      display: flex;
+      align-items: stretch;
+      gap: 0.1in;
+    }
+    .badge-stars {
+      background: #fff;
+      color: #1a1a1a;
+      border-radius: 0.05in;
+      padding: 0.08in 0.1in;
+      flex: 0 0 1.15in;
+      text-align: center;
+    }
+    .badge-stars .stars { font-size: 0.14in; letter-spacing: 0.02em; color: #e6a800; }
+    .badge-stars .txt {
+      font-size: 0.09in;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-top: 0.04in;
+      line-height: 1.2;
+    }
+    .footer-lines {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.04in;
+      font-size: 0.095in;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      line-height: 1.2;
+    }
+    .footer-lines .gold { color: #ffd54a; }
+    .footer-lines .cream { color: #f4ecd8; }
+
+    .fine-print {
+      margin-top: 0.08in;
+      font-size: 0.065in;
+      line-height: 1.35;
+      color: rgba(244, 236, 216, 0.55);
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    @media print {
+      html, body {
+        background: #fff;
+        padding: 0;
+        display: block;
+      }
+      .screen-hint { display: none; }
+      .label {
+        box-shadow: none;
+        page-break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      @page {
+        size: 3.5in 6in;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen-hint">
+    <h2>Impressão LX4000 (tinta dye)</h2>
+    <ul>
+      <li>Arquivo: abra no Chrome ou Edge → <strong>Imprimir</strong> → ative <strong>Gráficos de fundo / Background graphics</strong>.</li>
+      <li>Tamanho da página: <strong>3,5 × 6 pol.</strong> (ajuste em @page no CSS se seu rolo for outro).</li>
+      <li>Escala: <strong>100%</strong>. Qualidade: melhor / alta.</li>
+      <li>Preencha à mão ou no layout: data em <em>SELL BY</em> e certificações reais (ex.: Kosher) conforme seu produto.</li>
+    </ul>
+  </div>
+
+  <article class="label" aria-label="Product label Nuts It's Brazilian">
+    <div class="brazil-silhouette" aria-hidden="true">
+      <!-- Silhueta estilizada do Brasil (baixa opacidade) -->
+      <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+        <path d="M52 6c6 0 12 3 16 8 3 4 4 9 3 14 5 2 9 6 11 11 2 6 1 13-2 18 4 3 6 8 5 13-1 5-5 9-10 11 2 4 1 9-2 12-4 4-10 5-15 3-2 5-7 8-12 8-5 0-10-3-12-8-6 2-12 0-16-5-4-4-5-11-2-16-5-3-8-9-7-15 1-6 6-11 12-12-1-5 1-11 5-14 4-4 10-5 16-4 3-5 9-8 15-8z" />
+      </svg>
+    </div>
+
+    <!-- Decorative cashew fruit (simplified SVG) -->
+    <svg class="corner-art tr" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <ellipse cx="38" cy="42" rx="22" ry="28" fill="#c62828" transform="rotate(-18 38 42)" />
+      <ellipse cx="58" cy="58" rx="14" ry="18" fill="#ff9800" transform="rotate(12 58 58)" />
+      <path d="M62 52 Q78 48 88 62 Q82 72 70 70 Q62 66 62 52" fill="#4caf50" opacity="0.9" />
+      <ellipse cx="72" cy="68" rx="7" ry="9" fill="#d4a574" />
+    </svg>
+    <svg class="corner-art bl" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <ellipse cx="55" cy="40" rx="20" ry="26" fill="#e53935" transform="rotate(8 55 40)" />
+      <ellipse cx="38" cy="52" rx="12" ry="16" fill="#ffb74d" transform="rotate(-10 38 52)" />
+      <path d="M32 48 Q18 52 14 66 Q22 74 34 68 Q38 58 32 48" fill="#66bb6a" opacity="0.85" />
+      <ellipse cx="26" cy="62" rx="6" ry="8" fill="#c4a574" />
+    </svg>
+
+    <div class="content">
+      <div class="top-row">
+        <div class="kosher" title="Kosher mark — replace with your certified symbol">U</div>
+        <div class="sell-by">
+          SELL BY:<br />
+          <span class="line" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <p class="brand">Nuts It's Brazilian</p>
+      <div class="premium-row">
+        <span class="dash">— PREMIUM —</span>
+      </div>
+      <h1 class="product-title">BRAZILIAN CASHEWS</h1>
+
+      <p class="hook-primary">100% NATURAL · PREMIUM QUALITY · SINGLE-ORIGIN BRAZIL</p>
+      <p class="hook-secondary">Non-GMO ingredients · No artificial preservatives · A taste of Brazil in every bite<br /><span lang="pt">100% natural · qualidade premium · sabor autêntico do Brasil</span></p>
+
+      <div class="cashew-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg">
+          <path fill="none" stroke="#f4ecd8" stroke-width="2.2" stroke-linecap="round" d="M8 28 C8 12 22 4 32 8 C40 12 44 22 38 30 C34 36 26 38 18 34" />
+          <path fill="none" stroke="#f4ecd8" stroke-width="2.2" stroke-linecap="round" d="M36 22 C44 14 54 14 58 22 C60 28 56 34 48 32" />
+        </svg>
+      </div>
+
+      <p class="variant">ROASTED &amp; SEA SALTED</p>
+      <p class="net-wt">NET WT 5.5 OZ (155.9 g)</p>
+
+      <div class="hooks-grid">
+        <div class="hook-cell">
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#f4ecd8" stroke-width="2" />
+            <path fill="#f4ecd8" d="M24 10 C18 14 14 22 16 30 C18 36 24 38 28 36 C32 34 34 28 32 22 C30 16 26 12 24 10 Z" opacity="0.9" />
+          </svg>
+          SOURCED<br />FROM BRAZIL
+        </div>
+        <div class="hook-cell">
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="8" y="14" width="32" height="22" rx="3" fill="none" stroke="#f4ecd8" stroke-width="2" />
+            <path d="M14 22h20M14 28h14" stroke="#f4ecd8" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          HIGH PROTEIN<br />ENERGY SNACK
+        </div>
+        <div class="hook-cell">
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="24" cy="26" r="10" fill="none" stroke="#f4ecd8" stroke-width="2" />
+            <path d="M16 14l22 22" stroke="#ff7a2e" stroke-width="3" stroke-linecap="round" />
+            <path d="M20 10l6 4-2 6z" fill="#f4ecd8" />
+          </svg>
+          NO ARTIFICIAL<br />COLORS OR FLAVORS
+        </div>
+      </div>
+
+      <div class="footer-band">
+        <div class="badge-stars">
+          <div class="stars">★★★★★</div>
+          <div class="txt">CUSTOMER<br />FAVORITE</div>
+        </div>
+        <div class="footer-lines">
+          <span class="gold">RICH IN PLANT PROTEIN &amp; GOOD FATS</span>
+          <span class="cream">GREAT FOR LUNCHBOXES &amp; TRAVEL</span>
+          <span class="cream">RESEALABLE FRESHNESS*</span>
+        </div>
+      </div>
+
+      <p class="fine-print">
+        *If your pack is resealable; remove line otherwise. Verify all claims with your legal / Amazon listing rules. “U” shown for layout only — use your agency’s kosher mark if certified.
+      </p>
+    </div>
+  </article>
+</body>
+</html>
