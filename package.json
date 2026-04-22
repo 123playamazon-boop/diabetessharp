@@ -18,8 +18,8 @@
     "db:migrate": "npm run db:migrate --workspace=server",
     "db:seed": "npm run db:seed --workspace=server",
     "test": "npm run test --workspaces --if-present",
-    "dbx:dev": "npm run dev --prefix dbx-novo",
-    "dbx:api": "npm run scrape-server --prefix dbx-novo"
+    "dbx:dev": "npm run dev --prefix DBX",
+    "dbx:api": "npm run scrape-server --prefix DBX"
   },
   "workspaces": [
     "client",

@@ -2,7 +2,7 @@
 
 Cliente + consola admin em **React + Vite**, API Express (`scrape-server`) na porta **8787**, front na **5173** (ou porta seguinte se 5173 estiver ocupada).
 
-Este projeto vive em **`diabetes-neurosharp/dbx-novo`**. Use só esta pasta para desenvolver e evitar versões antigas do API noutros diretórios.
+Este projeto vive em **`diabetes-neurosharp/DBX`**. Use só esta pasta para desenvolver e evitar versões antigas do API noutros diretórios.
 
 ## Arranque
 
@@ -16,7 +16,7 @@ npm run dbx:dev
 Ou só dentro desta pasta:
 
 ```bash
-cd dbx-novo
+cd DBX
 npm install
 npm run dev
 ```

@@ -7,14 +7,14 @@ gh auth login -h github.com
 vercel login
 ```
 
-## 1) Repositório GitHub só com esta pasta (`dbx-novo`)
+## 1) Repositório GitHub só com esta pasta (`DBX`)
 
 **Opção A — recomendada (manténs o monorepo local, pushes só DBX para um remote novo):**
 
 Na raiz do monorepo (`diabetes-neurosharp`), com Git limpo:
 
 ```bash
-git subtree split -P dbx-novo -b dbx-only
+git subtree split -P DBX -b dbx-only
 ```
 
 No GitHub: **New repository** → nome por exemplo `DBX` (privado ou público), **sem** README/licença (repo vazio).
@@ -28,13 +28,13 @@ git push dbx-github dbx-only:main
 
 Opcional: apagar o branch local `dbx-only` depois do push.
 
-**Opção B — cópia física** (se preferires não usar `subtree`): copia a pasta `dbx-novo` para um sítio novo, `git init`, commit, `gh repo create DBX --private --source=. --push`.
+**Opção B — cópia física** (se preferires não usar `subtree`): copia a pasta `DBX` para um sítio novo, `git init`, commit, `gh repo create DBX --private --source=. --push`.
 
 ## 2) Vercel como produto novo «DBX»
 
 1. [Vercel Dashboard](https://vercel.com/dashboard) → **Add New…** → **Project**.
 2. **Import** o repositório `DBX` (o que acabaste de criar).
-3. **Root Directory**: `.` (se o repo contém só o conteúdo de `dbx-novo`).
+3. **Root Directory**: `.` (se o repo contém só o conteúdo de `DBX`).
 4. Framework: Vite (o `vercel.json` já define `build` / `dist`).
 5. **Nome do projeto** na Vercel: escolhe por exemplo `dbx` ou `dbx-portal` — fica à parte dos outros produtos.
 
@@ -53,7 +53,7 @@ O servidor (`npm run scrape-server` / `httpScrapeServer`) tem de estar noutro ho
 ## 4) Primeiro deploy
 
 ```bash
-cd /caminho/para/dbx-novo
+cd /caminho/para/DBX
 vercel --name dbx
 ```
 
