@@ -340,6 +340,29 @@ describe("httpScrapeServer API flows (integration)", () => {
       }
     });
 
+    it("POST /api/client/product-hunter com locale=es devolve resumo em espanhol (demo)", async () => {
+      const prevKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+      try {
+        const res = await request(app)
+          .post("/api/client/product-hunter")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send({
+            budget: "$4k first PO",
+            marketplace: "amazon_us",
+            experienceLevel: "beginner",
+            locale: "es",
+          })
+          .expect(200);
+        expect(res.body?.mode).toBe("demo");
+        expect(String(res.body?.hunter?.summary)).toContain("Modo demo");
+        expect(String(res.body?.hunter?.summary)).toContain("presupuesto");
+      } finally {
+        if (prevKey === undefined) delete process.env.OPENAI_API_KEY;
+        else process.env.OPENAI_API_KEY = prevKey;
+      }
+    });
+
     it("POST /api/client/listing-compliance without listingText → 400", async () => {
       const res = await request(app)
         .post("/api/client/listing-compliance")

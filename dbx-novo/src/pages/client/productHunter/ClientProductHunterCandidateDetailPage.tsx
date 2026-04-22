@@ -21,7 +21,7 @@ const inputClass =
 type LoadState = "loading" | "missing" | "ready";
 
 export function ClientProductHunterCandidateDetailPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { id: idParam } = useParams();
   const id = idParam?.trim() ?? "";
   const [loadState, setLoadState] = useState<LoadState>("loading");
@@ -150,7 +150,7 @@ export function ClientProductHunterCandidateDetailPage() {
       if (seed) body.seedAsin = seed;
       const cat = (categoryLabel.trim() || candidate.hunterContext?.categoryLabel || "").trim();
       if (cat) body.categoryLabel = cat;
-      const r = await postProductHunterBrief(id, body);
+      const r = await postProductHunterBrief(id, { ...body, locale });
       if (!r.ok) {
         toast.error(r.error);
         return;

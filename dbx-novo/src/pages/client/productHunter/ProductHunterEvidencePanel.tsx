@@ -16,7 +16,7 @@ const inputClass =
 type Props = { onCandidatesChanged?: () => void };
 
 export function ProductHunterEvidencePanel({ onCandidatesChanged }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [budget, setBudget] = useState("");
   const [experience, setExperience] = useState<ProductHunterExperienceLevel>("intermediate");
   const [editionDate, setEditionDate] = useState("");
@@ -44,6 +44,7 @@ export function ProductHunterEvidencePanel({ onCandidatesChanged }: Props) {
         budget: b,
         marketplace: "amazon_us",
         experienceLevel: experience,
+        locale,
         ...(edition && /^\d{4}-\d{2}-\d{2}$/.test(edition) ? { editionDate: edition } : {}),
         filters: {
           priceMinUsd,

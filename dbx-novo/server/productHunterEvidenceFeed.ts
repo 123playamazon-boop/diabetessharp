@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ProductHunterCompetition, ProductHunterDemand, ProductHunterExperienceLevel, ProductHunterIdea } from "../shared/productHunter";
+import { normalizeProductHunterUiLocale, type ProductHunterUiLocale } from "../shared/productHunter";
 import type { AmazonLeadTableRow } from "./keepaAmazonLeads";
 import { enrichLeadRowCalculations } from "./keepaAmazonLeads";
 
@@ -265,18 +266,48 @@ export function filterAndScoreRows(rows: AmazonLeadTableRow[], f: EvidenceWinner
   return out;
 }
 
-export function buildDeterministicIdea(row: AmazonLeadTableRow, detScore: number): ProductHunterIdea {
+function evidenceDeterministicPlaceholder(locale: ProductHunterUiLocale): Pick<ProductHunterIdea, "logisticsFeasibility" | "whyTrending" | "sellingStrategy"> {
+  const L: Record<ProductHunterUiLocale, Pick<ProductHunterIdea, "logisticsFeasibility" | "whyTrending" | "sellingStrategy">> = {
+    en: {
+      logisticsFeasibility:
+        "Awaiting narrative pass: typical FBA parcel assumptions only — verify weight/dims on the listing before inbound.",
+      whyTrending: "Awaiting narrative pass: metrics-only read will be filled from EMS/BSR/offer data.",
+      sellingStrategy: "Awaiting narrative pass: strategy will be aligned to seller experience and budget text.",
+    },
+    "pt-BR": {
+      logisticsFeasibility:
+        "Modo demo (sem narrativa ainda): assumimos pacote padrão FBA — confirme peso e dimensões no anúncio antes de mandar inbound.",
+      whyTrending:
+        "Modo demo: por enquanto só sinais duros (EMS, BSR, ofertas). Quando a IA narrar, isto vira história de tendência de verdade.",
+      sellingStrategy:
+        "Modo demo: posicionamento e anúncios entram alinhados ao seu nível e ao texto de orçamento assim que a narrativa LLM estiver ligada.",
+    },
+    es: {
+      logisticsFeasibility:
+        "Modo demo (sin narrativa aún): supuestos típicos de paquete FBA — verifica peso/medidas en la ficha antes del inbound.",
+      whyTrending:
+        "Modo demo: por ahora solo señales duras (EMS, BSR, ofertas). Con LLM, esto pasa a una lectura de tendencia completa.",
+      sellingStrategy:
+        "Modo demo: posicionamiento y ads quedarán alineados a tu nivel y al texto de presupuesto cuando entre la narrativa por IA.",
+    },
+  };
+  return L[locale] ?? L["pt-BR"];
+}
+
+export function buildDeterministicIdea(row: AmazonLeadTableRow, detScore: number, locale: ProductHunterUiLocale = "pt-BR"): ProductHunterIdea {
   const r = enrichLeadRowCalculations({ ...row });
   const idea = extractConceptFromListing(r.title, r.categoryLabel);
+  const loc = normalizeProductHunterUiLocale(locale);
+  const ph = evidenceDeterministicPlaceholder(loc);
   return {
     idea,
     demandLevel: demandLevelFromEms(r.emsMonthly),
     competitionLevel: competitionLevelFromOffers(r.newOffersTotal),
     estimatedProfitMargin: marginLabelFromRow(r).slice(0, 80),
     bestMarketplace: "Amazon USA",
-    logisticsFeasibility: "Awaiting narrative pass: typical FBA parcel assumptions only — verify weight/dims on the listing before inbound.",
-    whyTrending: "Awaiting narrative pass: metrics-only read will be filled from EMS/BSR/offer data.",
-    sellingStrategy: "Awaiting narrative pass: strategy will be aligned to seller experience and budget text.",
+    logisticsFeasibility: ph.logisticsFeasibility,
+    whyTrending: ph.whyTrending,
+    sellingStrategy: ph.sellingStrategy,
     opportunityScore: detScore,
   };
 }
@@ -289,17 +320,27 @@ type LlmNarrativeItem = {
   opportunityScore: number;
 };
 
-const EVIDENCE_LLM_SYSTEM = `You are a US Amazon FBA analyst for Direct Box USA.
+function evidenceLlmSystemPrompt(locale: ProductHunterUiLocale): string {
+  const loc = normalizeProductHunterUiLocale(locale);
+  const langLine =
+    loc === "pt-BR"
+      ? "Write every human-readable string field in Brazilian Portuguese (pt-BR). Keep ASINs and numbers as-is."
+      : loc === "es"
+        ? "Write every human-readable string field in Spanish (es). Keep ASINs and numbers as-is."
+        : "Write every human-readable string field in English. Keep ASINs and numbers as-is.";
+  return `You are a US Amazon FBA analyst for Direct Box USA.
 
 You receive JSON with budget (free text), experienceLevel (beginner|intermediate|advanced), and an array "items" of at most 10 products. Each item has: asin, title, categoryLabel, usdAmazon, emsMonthly, newOffersTotal, fbaOfferCount, bsrAvg90, bsrCurrent, roiPct.
 
 Output ONLY valid JSON:
-{ "items": [ { "asin": "string (must match input)", "logisticsFeasibility": "2-4 sentences English", "whyTrending": "2-4 sentences English grounded ONLY in the numeric signals provided (EMS, BSR, offers, price)", "sellingStrategy": "3-5 sentences English tailored to experienceLevel", "opportunityScore": integer 0-100 reflecting niche fit to the seller profile } ] }
+{ "items": [ { "asin": "string (must match input)", "logisticsFeasibility": "2-4 sentences", "whyTrending": "2-4 sentences grounded ONLY in the numeric signals provided (EMS, BSR, offers, price)", "sellingStrategy": "3-5 sentences tailored to experienceLevel", "opportunityScore": integer 0-100 reflecting niche fit to the seller profile } ] }
 
 Rules:
 - Same length and order as input items; one object per ASIN.
-- Do not invent sales numbers; refer to "signals suggest" / "metrics indicate" when needed.
+- Do not invent sales numbers; refer to "signals suggest" / "metrics indicate" (or natural equivalent in the output language) when needed.
+- ${langLine}
 - No markdown fences.`;
+}
 
 function parseLlmNarrativesJson(raw: string, expectedAsins: string[]): Map<string, LlmNarrativeItem> | null {
   let parsed: unknown;
@@ -342,6 +383,7 @@ export async function callOpenAiEvidenceNarratives(params: {
   budget: string;
   experience: ProductHunterExperienceLevel;
   top: EvidenceRowScored[];
+  locale: ProductHunterUiLocale;
 }): Promise<Map<string, LlmNarrativeItem> | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return null;
@@ -375,7 +417,7 @@ export async function callOpenAiEvidenceNarratives(params: {
       temperature: 0.3,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: EVIDENCE_LLM_SYSTEM },
+        { role: "system", content: evidenceLlmSystemPrompt(params.locale) },
         { role: "user", content: JSON.stringify(userPayload) },
       ],
     }),
@@ -394,10 +436,41 @@ export async function buildEvidenceProductIdeasForTests(
   f: EvidenceWinnerFilters,
   budget: string,
   experience: ProductHunterExperienceLevel,
-  options?: { disableLlm?: boolean },
+  options?: { disableLlm?: boolean; locale?: ProductHunterUiLocale },
 ): Promise<EvidenceFeedResult> {
   const tryLlm = !options?.disableLlm;
-  return buildEvidenceProductIdeasInner(rows, f, budget, experience, tryLlm);
+  const locale = normalizeProductHunterUiLocale(options?.locale);
+  return buildEvidenceProductIdeasInner(rows, f, budget, experience, tryLlm, locale);
+}
+
+function mergeNoLlmFallback(locale: ProductHunterUiLocale): Pick<ProductHunterIdea, "logisticsFeasibility" | "whyTrending" | "sellingStrategy"> {
+  const L: Record<ProductHunterUiLocale, Pick<ProductHunterIdea, "logisticsFeasibility" | "whyTrending" | "sellingStrategy">> = {
+    en: {
+      logisticsFeasibility:
+        "No LLM narrative available. Use listing data: verify dimensions/weight and hazmat before FBA inbound; returns risk depends on category.",
+      whyTrending:
+        "Signals only: EMS, BSR and offer counts indicate relative demand vs competition — validate on Amazon before sourcing.",
+      sellingStrategy:
+        "Start with tight inventory and PPC caps; improve listing creative from competitor gaps; align MOQ to budget and experience level.",
+    },
+    "pt-BR": {
+      logisticsFeasibility:
+        "Sem narrativa LLM agora: use a ficha do anúncio — cubagem, peso e possível hazmat antes de mandar inbound; devolução depende da categoria.",
+      whyTrending:
+        "Só sinais: EMS, BSR e ofertas indicam demanda relativa vs concorrência — valida no Amazon antes de fechar fornecedor.",
+      sellingStrategy:
+        "Começa com estoque e PPC contidos; melhora criativo e prova na página olhando gaps dos concorrentes; MOQ alinhado ao orçamento e ao seu nível.",
+    },
+    es: {
+      logisticsFeasibility:
+        "Sin narrativa LLM: usa la ficha del listing — medidas/peso y posible hazmat antes del inbound; el riesgo de devolución depende de la categoría.",
+      whyTrending:
+        "Solo señales: EMS, BSR y ofertas indican demanda relativa vs competencia — valida en Amazon antes de cerrar sourcing.",
+      sellingStrategy:
+        "Arranca con inventario y PPC acotados; mejora creativo y prueba social mirando gaps de competidores; MOQ alineado a presupuesto y nivel.",
+    },
+  };
+  return L[normalizeProductHunterUiLocale(locale)] ?? L["pt-BR"];
 }
 
 export function mergeIdeasWithNarratives(
@@ -405,21 +478,21 @@ export function mergeIdeasWithNarratives(
   detScores: number[],
   narrativeByAsin: Map<string, LlmNarrativeItem> | null,
   asins: string[],
+  locale: ProductHunterUiLocale = "pt-BR",
 ): { products: ProductHunterIdea[]; llmNarrativeOk: boolean } {
+  const loc = normalizeProductHunterUiLocale(locale);
   const llmNarrativeOk = Boolean(narrativeByAsin && asins.length > 0 && asins.every((a) => narrativeByAsin!.has(a.toUpperCase())));
   const products = base.map((idea, i) => {
     const det = detScores[i] ?? idea.opportunityScore;
     const asin = asins[i]?.toUpperCase() ?? "";
     const n = narrativeByAsin?.get(asin);
     if (!n) {
+      const fb = mergeNoLlmFallback(loc);
       return {
         ...idea,
-        logisticsFeasibility:
-          "No LLM narrative available. Use listing data: verify dimensions/weight and hazmat before FBA inbound; returns risk depends on category.",
-        whyTrending:
-          "Signals only: EMS, BSR and offer counts indicate relative demand vs competition — validate on Amazon before sourcing.",
-        sellingStrategy:
-          "Start with tight inventory and PPC caps; improve listing creative from competitor gaps; align MOQ to budget and experience level.",
+        logisticsFeasibility: fb.logisticsFeasibility,
+        whyTrending: fb.whyTrending,
+        sellingStrategy: fb.sellingStrategy,
         opportunityScore: det,
       };
     }
@@ -435,13 +508,36 @@ export function mergeIdeasWithNarratives(
   return { products, llmNarrativeOk };
 }
 
+function evidenceSummaryEmpty(locale: ProductHunterUiLocale): string {
+  const L: Record<ProductHunterUiLocale, string> = {
+    en: "No listings in this edition passed the evidence filters. Try relaxing thresholds or publish a fresher Amazon Leads edition.",
+    "pt-BR":
+      "Nenhum anúncio desta edição passou pelos filtros do evidence feed. Afrouxe os limites ou publique uma edição mais recente em Leads Amazon.",
+    es: "Ningún listing de esta edición pasó los filtros del evidence feed. Relaja umbrales o publica una edición más reciente en Leads Amazon.",
+  };
+  return L[normalizeProductHunterUiLocale(locale)] ?? L["pt-BR"];
+}
+
+function evidenceSummaryWithCount(locale: ProductHunterUiLocale, n: number): string {
+  const loc = normalizeProductHunterUiLocale(locale);
+  if (loc === "en") {
+    return `Evidence-ranked picks from published Amazon lead data (${n} analysed with deterministic + optional LLM blend).`;
+  }
+  if (loc === "es") {
+    return `Oportunidades rankeadas por evidencia a partir de datos publicados de Leads Amazon (${n} analizadas con score determinístico + mezcla opcional con LLM).`;
+  }
+  return `Ranking por evidência a partir dos dados publicados de Leads Amazon (${n} itens analisados com score determinístico + mistura opcional com LLM).`;
+}
+
 async function buildEvidenceProductIdeasInner(
   rows: AmazonLeadTableRow[],
   f: EvidenceWinnerFilters,
   budget: string,
   experience: ProductHunterExperienceLevel,
   tryLlm: boolean,
+  locale: ProductHunterUiLocale,
 ): Promise<EvidenceFeedResult> {
+  const loc = normalizeProductHunterUiLocale(locale);
   const scored = filterAndScoreRows(rows, f);
   const top = scored.slice(0, 10);
   const deterministicByAsin = new Map<string, number>();
@@ -450,24 +546,21 @@ async function buildEvidenceProductIdeasInner(
   const asins: string[] = [];
   for (const t of top) {
     deterministicByAsin.set(t.row.asin.toUpperCase(), t.deterministicScore);
-    baseIdeas.push(buildDeterministicIdea(t.row, t.deterministicScore));
+    baseIdeas.push(buildDeterministicIdea(t.row, t.deterministicScore, loc));
     detScores.push(t.deterministicScore);
     asins.push(t.row.asin.toUpperCase());
   }
   let narrativeByAsin: Map<string, LlmNarrativeItem> | null = null;
   if (tryLlm && top.length > 0) {
     try {
-      narrativeByAsin = await callOpenAiEvidenceNarratives({ budget, experience, top });
+      narrativeByAsin = await callOpenAiEvidenceNarratives({ budget, experience, top, locale: loc });
     } catch {
       narrativeByAsin = null;
     }
   }
-  const { products: merged, llmNarrativeOk } = mergeIdeasWithNarratives(baseIdeas, detScores, narrativeByAsin, asins);
+  const { products: merged, llmNarrativeOk } = mergeIdeasWithNarratives(baseIdeas, detScores, narrativeByAsin, asins, loc);
   merged.sort((a, b) => b.opportunityScore - a.opportunityScore);
-  const summary =
-    top.length === 0
-      ? "No listings in this edition passed the evidence filters. Try relaxing thresholds or publish a fresher Amazon Leads edition."
-      : `Evidence-ranked picks from published Amazon lead data (${top.length} analysed with deterministic + optional LLM blend).`;
+  const summary = top.length === 0 ? evidenceSummaryEmpty(loc) : evidenceSummaryWithCount(loc, top.length);
   return {
     products: merged,
     summary,
@@ -535,13 +628,16 @@ export async function runEvidenceFeedPipeline(params: {
   suite: string;
   useCache: boolean;
   cacheKeyExtra: Record<string, unknown>;
+  locale?: ProductHunterUiLocale;
 }): Promise<{ result: EvidenceFeedResult; mode: "evidence" | "evidence_demo"; fromCache: boolean }> {
+  const locale = normalizeProductHunterUiLocale(params.locale);
   const key = evidenceCacheKey({
     suite: params.suite,
     editionDate: params.editionDate,
     filters: params.filters,
     budget: params.budget.slice(0, 200),
     experience: params.experience,
+    locale,
     ...params.cacheKeyExtra,
   });
   if (params.useCache) {
@@ -561,7 +657,7 @@ export async function runEvidenceFeedPipeline(params: {
     }
   }
   const hasKey = Boolean(process.env.OPENAI_API_KEY?.trim());
-  const inner = await buildEvidenceProductIdeasInner(params.rows, params.filters, params.budget, params.experience, hasKey);
+  const inner = await buildEvidenceProductIdeasInner(params.rows, params.filters, params.budget, params.experience, hasKey, locale);
   const mode: "evidence" | "evidence_demo" = inner.llmNarrativeOk ? "evidence" : "evidence_demo";
   const result: EvidenceFeedResult = {
     ...inner,

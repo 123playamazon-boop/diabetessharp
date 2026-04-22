@@ -16,6 +16,7 @@ import {
   normalizeProductHunterBrief,
   normalizeProductHunterCandidateContext,
 } from "../../shared/productHunter";
+import type { AppLocale } from "../i18n/catalog";
 
 function isDemand(v: unknown): v is ProductHunterIdea["demandLevel"] {
   return v === "high" || v === "medium" || v === "low";
@@ -100,11 +101,13 @@ export async function postProductHunter(payload: {
   budget: string;
   marketplace: ProductHunterMarketplaceId;
   experienceLevel: "beginner" | "intermediate" | "advanced";
+  locale?: AppLocale;
 }): Promise<ProductHunterResponse> {
+  const { locale = "pt-BR", ...rest } = payload;
   const res = await fetch(apiUrl("/api/client/product-hunter"), {
     method: "POST",
     headers: jsonUserHeaders(),
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...rest, locale }),
   });
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
@@ -147,11 +150,13 @@ export async function postProductHunterEvidenceFeed(payload: {
   experienceLevel: "beginner" | "intermediate" | "advanced";
   editionDate?: string;
   filters?: EvidenceWinnerFiltersPayload;
+  locale?: AppLocale;
 }): Promise<ProductHunterEvidenceFeedResponse> {
+  const { locale = "pt-BR", ...rest } = payload;
   const res = await fetch(apiUrl("/api/client/product-hunter/evidence-feed"), {
     method: "POST",
     headers: jsonUserHeaders(),
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...rest, locale }),
   });
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
@@ -311,12 +316,14 @@ export async function postProductHunterBrief(
     editionDate?: string;
     categoryLabel?: string;
     competitorAsins?: string[];
+    locale?: AppLocale;
   } = {},
 ): Promise<PostBriefResponse> {
+  const { locale = "pt-BR", ...rest } = body;
   const res = await fetch(apiUrl(`/api/client/product-hunter/candidates/${encodeURIComponent(id)}/brief`), {
     method: "POST",
     headers: jsonUserHeaders(),
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...rest, locale }),
   });
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {

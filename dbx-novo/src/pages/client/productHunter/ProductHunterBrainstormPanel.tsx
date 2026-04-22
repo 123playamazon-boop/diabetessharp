@@ -107,7 +107,7 @@ type Props = {
 };
 
 export function ProductHunterBrainstormPanel({ onCandidatesChanged }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [budget, setBudget] = useState("");
   const [marketplace, setMarketplace] = useState<ProductHunterMarketplaceId>(defaultMarketplace);
   const [experience, setExperience] = useState<ProductHunterExperienceLevel>(defaultExperience);
@@ -126,7 +126,7 @@ export function ProductHunterBrainstormPanel({ onCandidatesChanged }: Props) {
         toast.error(t("client.productHunter.validationBudget"));
         return;
       }
-      const r = await postProductHunter({ budget: b, marketplace, experienceLevel: experience });
+      const r = await postProductHunter({ budget: b, marketplace, experienceLevel: experience, locale });
       if (!r.ok) {
         toast.error(r.error);
         setHunter(null);

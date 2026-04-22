@@ -5,6 +5,7 @@ import {
   parseProductHunterCandidate,
   listProductHunterCandidates,
   patchProductHunterCandidate,
+  postProductHunter,
 } from "./productHunterApi";
 
 describe("productHunterApi", () => {
@@ -104,6 +105,67 @@ describe("productHunterApi", () => {
       expect(fetch).toHaveBeenCalledWith(
         "/api/client/product-hunter/candidates",
         expect.objectContaining({ headers: expect.any(Object) }),
+      );
+    });
+
+    it("postProductHunter inclui locale no JSON", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            mode: "demo",
+            hunter: {
+              products: [
+                {
+                  idea: "x",
+                  demandLevel: "high",
+                  competitionLevel: "low",
+                  estimatedProfitMargin: "10%",
+                  bestMarketplace: "Amazon USA",
+                  logisticsFeasibility: "a",
+                  whyTrending: "b",
+                  sellingStrategy: "c",
+                  opportunityScore: 50,
+                },
+                {
+                  idea: "y",
+                  demandLevel: "high",
+                  competitionLevel: "low",
+                  estimatedProfitMargin: "10%",
+                  bestMarketplace: "Amazon USA",
+                  logisticsFeasibility: "a",
+                  whyTrending: "b",
+                  sellingStrategy: "c",
+                  opportunityScore: 40,
+                },
+                {
+                  idea: "z",
+                  demandLevel: "high",
+                  competitionLevel: "low",
+                  estimatedProfitMargin: "10%",
+                  bestMarketplace: "Amazon USA",
+                  logisticsFeasibility: "a",
+                  whyTrending: "b",
+                  sellingStrategy: "c",
+                  opportunityScore: 30,
+                },
+              ],
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+      await postProductHunter({
+        budget: "1",
+        marketplace: "amazon_us",
+        experienceLevel: "beginner",
+        locale: "en",
+      });
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/client/product-hunter",
+        expect.objectContaining({
+          body: expect.stringContaining('"locale":"en"'),
+        }),
       );
     });
 

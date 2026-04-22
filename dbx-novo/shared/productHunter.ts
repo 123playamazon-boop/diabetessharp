@@ -1,3 +1,13 @@
+import {
+  buildDemoProductHunterSummary,
+  getDemoProductHunterSeeds,
+  normalizeProductHunterUiLocale,
+  type ProductHunterUiLocale,
+} from "./productHunterDemoLocales";
+
+export type { ProductHunterUiLocale } from "./productHunterDemoLocales";
+export { normalizeProductHunterUiLocale } from "./productHunterDemoLocales";
+
 /** Marketplaces supported by Product Hunter AI (US-first). */
 export const PRODUCT_HUNTER_MARKETPLACES = ["amazon_us", "walmart_us", "tiktok_shop_us", "shopify", "ebay_us"] as const;
 
@@ -228,83 +238,37 @@ function expBias(experience: ProductHunterExperienceLevel): number {
   return 0;
 }
 
-/** Deterministic demo ideas when OpenAI is unavailable. */
+/** Deterministic demo ideas when OpenAI is unavailable (textos por `locale` de UI). */
 export function buildDemoProductHunter(
   budget: string,
   marketplace: ProductHunterMarketplaceId,
   experience: ProductHunterExperienceLevel,
+  locale: ProductHunterUiLocale = "pt-BR",
 ): ProductHunterResult {
+  const localeNorm = normalizeProductHunterUiLocale(locale);
   const bias = expBias(experience);
   const mp = labelMarketplace(marketplace);
-  const bNote = budget.trim().slice(0, 80) || "unspecified budget";
+  const bNote =
+    budget.trim().slice(0, 80) ||
+    (localeNorm === "pt-BR" ? "orçamento não indicado" : localeNorm === "es" ? "presupuesto no indicado" : "unspecified budget");
 
-  const seeds: Omit<ProductHunterIdea, "opportunityScore">[] = [
-    {
-      idea: "Problem-solving kitchen gadget bundle (narrow SKU, clear use case)",
-      demandLevel: "high",
-      competitionLevel: "medium",
-      estimatedProfitMargin: "22–35%",
-      bestMarketplace: marketplace === "tiktok_shop_us" ? "TikTok Shop USA" : "Amazon USA",
-      logisticsFeasibility:
-        "Small parcel, sub-2 lb — FBA-friendly if inbound discipline is tight; avoid oversized during first PO.",
-      whyTrending:
-        "Search volume up on “time saved / counter clutter” queries; short-form demos convert impulse buyers when the hook is visual proof in 3 seconds.",
-      sellingStrategy:
-        "Lead with a single hero SKU + variation matrix after proof; use A+ comparison table vs generic alternatives; tighten COGS before scaling ads.",
-    },
-    {
-      idea: "Pet accessory with replaceable consumable (subscription tail)",
-      demandLevel: "high",
-      competitionLevel: "high",
-      estimatedProfitMargin: "15–24%",
-      bestMarketplace: "Amazon USA + Shopify landing for LTV",
-      logisticsFeasibility:
-        "Moderate — packaging dims matter; bundle inserts for repurchase; watch hazmat flags if any liquid.",
-      whyTrending:
-        "Pet spend holds in soft consumer cycles; “refill” framing increases repeat purchase rate vs one-off novelty.",
-      sellingStrategy:
-        "Anchor price to cost-per-use; Subscribe & Save where eligible; collect emails on insert for DTC second purchase.",
-    },
-    {
-      idea: "Industrial-adjacent home office SKU (B2B-lite demand on consumer channels)",
-      demandLevel: "medium",
-      competitionLevel: "low",
-      estimatedProfitMargin: "28–40%",
-      bestMarketplace: marketplace === "walmart_us" ? "Walmart USA" : mp,
-      logisticsFeasibility:
-        "Strong — dense SKU, palletizable; fewer returns if spec sheet is explicit; watch MAP policies if brand gated.",
-      whyTrending:
-        "Hybrid work stabilized baseline category demand; fewer trendy spikes but steadier sell-through for operators who like inventory predictability.",
-      sellingStrategy:
-        "Spec-forward listing, compatibility callouts, B2B keywords where allowed; avoid hype; win on trust and measurable outcomes.",
-    },
-    {
-      idea: "Seasonal outdoor micro-category (6–10 week sprint window)",
-      demandLevel: "medium",
-      competitionLevel: "medium",
-      estimatedProfitMargin: "18–30%",
-      bestMarketplace: marketplace === "ebay_us" ? "eBay USA (velocity + auction tests)" : "TikTok Shop USA",
-      logisticsFeasibility:
-        "Timing risk — inbound must clear before demand peak; air vs ocean tradeoff; keep MOQ tight until sell-through proves.",
-      whyTrending:
-        "Short-window categories reward operators who can read search lift early; losers overbuy after the spike.",
-      sellingStrategy:
-        "Pre-launch content bank; kill losers fast with inventory caps; use bundles to lift AOV without doubling logistics SKUs.",
-    },
-    {
-      idea: "Health-adjacent consumable with clear dosage ritual (compliance-forward copy)",
-      demandLevel: "medium",
-      competitionLevel: "high",
-      estimatedProfitMargin: "12–22%",
-      bestMarketplace: marketplace === "shopify" ? "Shopify (DTC + subscriptions)" : "Amazon USA",
-      logisticsFeasibility:
-        "Labeling and claims discipline required; avoid medical positioning; consider lot tracking if multi-batch.",
-      whyTrending:
-        "Wellness routines stay sticky; winners differentiate on transparency and third-party testing messaging where appropriate.",
-      sellingStrategy:
-        "Education-first landing; comparison to alternatives on spec not hype; tighten refund policy to protect margin on opened units.",
-    },
-  ];
+  const baseSeeds = getDemoProductHunterSeeds(localeNorm);
+  const seeds: Omit<ProductHunterIdea, "opportunityScore">[] = baseSeeds.map((s, i) => {
+    const o = { ...s };
+    if (i === 0) {
+      o.bestMarketplace = marketplace === "tiktok_shop_us" ? "TikTok Shop USA" : "Amazon USA";
+    } else if (i === 1) {
+      o.bestMarketplace = "Amazon USA + Shopify landing for LTV";
+    } else if (i === 2) {
+      o.bestMarketplace = marketplace === "walmart_us" ? "Walmart USA" : mp;
+    } else if (i === 3) {
+      o.bestMarketplace =
+        marketplace === "ebay_us" ? "eBay USA (velocity + auction tests)" : marketplace === "tiktok_shop_us" ? "TikTok Shop USA" : "TikTok Shop USA";
+    } else {
+      o.bestMarketplace = marketplace === "shopify" ? "Shopify (DTC + subscriptions)" : "Amazon USA";
+    }
+    return o;
+  });
 
   const products: ProductHunterIdea[] = seeds.map((s, i) => {
     const base = 58 + i * 7 + bias;
@@ -316,6 +280,6 @@ export function buildDemoProductHunter(
 
   return {
     products,
-    summary: `Demo mode: five structured opportunities tuned to budget "${bNote}", primary channel bias ${mp}, and ${experience} seller profile. With OPENAI_API_KEY, the server generates a bespoke ranked set from your inputs.`,
+    summary: buildDemoProductHunterSummary(localeNorm, bNote, mp, experience),
   };
 }

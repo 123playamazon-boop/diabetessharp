@@ -15,6 +15,8 @@ import {
   isProductHunterExperienceLevel,
   isProductHunterMarketplaceId,
   normalizeProductHunterCandidateContext,
+  normalizeProductHunterUiLocale,
+  type ProductHunterUiLocale,
 } from "../shared/productHunter";
 import { getEditionByDate, getLatestEdition } from "./amazonLeadsDailyStore";
 import { coerceLeadRow, type AmazonLeadTableRow } from "./keepaAmazonLeads";
@@ -33,20 +35,28 @@ import {
 
 const MAX_BUDGET_LEN = 200;
 
-const PRODUCT_HUNTER_SYSTEM = `You are Product Hunter AI — a senior US e-commerce analyst for Direct Box USA.
+function productHunterLiveSystemPrompt(locale: ProductHunterUiLocale): string {
+  const loc = normalizeProductHunterUiLocale(locale);
+  const lang =
+    loc === "pt-BR"
+      ? "All human-readable string values in the JSON (summary, idea, estimatedProfitMargin, bestMarketplace, logisticsFeasibility, whyTrending, sellingStrategy) must be in Brazilian Portuguese (pt-BR). Keep enum fields demandLevel and competitionLevel exactly as: high | medium | low."
+      : loc === "es"
+        ? "All human-readable string values in the JSON must be in Spanish (es). Keep demandLevel and competitionLevel exactly as: high | medium | low."
+        : "All human-readable string values in the JSON must be in English. Keep demandLevel and competitionLevel exactly as: high | medium | low.";
+  return `You are Product Hunter AI — a senior US e-commerce analyst for Direct Box USA.
 
 The user is an e-commerce seller evaluating what to sell next on US marketplaces. Inputs: budget (free text), target marketplace (one of: amazon_us, walmart_us, tiktok_shop_us, shopify, ebay_us), experience level (beginner | intermediate | advanced).
 
 Output ONLY valid JSON:
 {
-  "summary": "2-3 sentences: analytical read of the opportunity set for this profile; no hype; decision-oriented English.",
+  "summary": "2-3 sentences: analytical read of the opportunity set for this profile; no hype; decision-oriented.",
   "products": [
     {
       "idea": "concise product concept (not a brand name; category + angle)",
       "demandLevel": "high" | "medium" | "low",
       "competitionLevel": "high" | "medium" | "low",
       "estimatedProfitMargin": "string like 18–28% or numeric range; honest band, not a guarantee",
-      "bestMarketplace": "single best primary marketplace name in English (e.g. Amazon USA)",
+      "bestMarketplace": "single best primary marketplace name for the chosen language (e.g. Amazon USA may stay as a proper noun)",
       "logisticsFeasibility": "2-4 sentences: size/weight/inbound complexity/returns risk",
       "whyTrending": "2-4 sentences: demand drivers, search/social signals, category cycle — factual tone",
       "sellingStrategy": "3-5 sentences: positioning, pricing discipline, listing/promo angle for the chosen marketplace",
@@ -61,12 +71,15 @@ Rules:
 - opportunityScore must reflect profitability potential, scalability, ease of entry for the experience level, and fit to the selected marketplace — not hype.
 - demandLevel and competitionLevel must be consistent with the narrative.
 - Do not invent trademarked brand names or claim verified sales data you do not have; speak in category/strategy terms.
+- ${lang}
 - No markdown fences.`;
+}
 
 type HunterBody = {
   budget?: string;
   marketplace?: string;
   experienceLevel?: string;
+  locale?: unknown;
 };
 
 function clampScore(n: number): number {
@@ -133,16 +146,24 @@ async function callOpenAiProductHunter(
   budget: string,
   marketplace: ProductHunterMarketplaceId,
   experience: ProductHunterExperienceLevel,
+  locale: ProductHunterUiLocale,
 ): Promise<ProductHunterResult | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return null;
   const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const loc = normalizeProductHunterUiLocale(locale);
+  const instruction =
+    loc === "pt-BR"
+      ? "Gere exatamente 5 oportunidades ranqueadas. Tom analítico, orientado a decisão, em português do Brasil. Sem floreio."
+      : loc === "es"
+        ? "Genera exactamente 5 oportunidades rankeadas. Tono analítico, orientado a decisión, en español. Sin relleno."
+        : "Generate exactly 5 ranked opportunities. English. Analytical, business-focused, decision-making oriented. No fluff.";
   const userPayload = {
     budget,
     marketplace,
     experienceLevel: experience,
-    instruction:
-      "Generate 5 ranked opportunities. English. Analytical, business-focused, decision-making oriented. No fluff.",
+    outputLocale: loc,
+    instruction,
   };
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -156,7 +177,7 @@ async function callOpenAiProductHunter(
       temperature: 0.35,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: PRODUCT_HUNTER_SYSTEM },
+        { role: "system", content: productHunterLiveSystemPrompt(loc) },
         { role: "user", content: JSON.stringify(userPayload) },
       ],
     }),
@@ -197,12 +218,13 @@ export function registerProductHunterRoutes(app: Express): void {
     }
     const marketplace = marketplaceRaw as ProductHunterMarketplaceId;
     const experience = experienceRaw as ProductHunterExperienceLevel;
+    const locale = normalizeProductHunterUiLocale(b.locale);
 
-    const runDemo = (): ProductHunterResult => buildDemoProductHunter(budget, marketplace, experience);
+    const runDemo = (): ProductHunterResult => buildDemoProductHunter(budget, marketplace, experience, locale);
 
     if (process.env.OPENAI_API_KEY?.trim()) {
       try {
-        const ai = await callOpenAiProductHunter(budget, marketplace, experience);
+        const ai = await callOpenAiProductHunter(budget, marketplace, experience, locale);
         if (ai) {
           res.json({ ok: true, mode: "live", hunter: ai });
           return;
@@ -224,6 +246,7 @@ export function registerProductHunterRoutes(app: Express): void {
   app.post("/api/client/product-hunter/evidence-feed", requireUser, async (req: Request, res: Response) => {
     const suite = userSuite(req);
     const b = req.body && typeof req.body === "object" ? (req.body as Record<string, unknown>) : {};
+    const locale = normalizeProductHunterUiLocale(b.locale);
     const budget = typeof b.budget === "string" ? b.budget.trim() : "";
     const marketplaceRaw = typeof b.marketplace === "string" ? b.marketplace.trim() : "";
     const experienceRaw = typeof b.experienceLevel === "string" ? b.experienceLevel.trim() : "";
@@ -259,14 +282,19 @@ export function registerProductHunterRoutes(app: Express): void {
     const edition = editionDate ? getEditionByDate(editionDate) ?? getLatestEdition() : getLatestEdition();
 
     if (!edition) {
+      const emptySummary: Record<ProductHunterUiLocale, string> = {
+        en: "No edition published in amazonLeadsDailyStore. Publish an edition in Admin → Amazon Leads (Keepa) to power the evidence feed.",
+        "pt-BR":
+          "Sem edição publicada em amazonLeadsDailyStore. Publique uma edição em Admin → Leads Amazon (Keepa) para alimentar o evidence feed.",
+        es: "No hay edición publicada en amazonLeadsDailyStore. Publica una edición en Admin → Leads Amazon (Keepa) para alimentar el evidence feed.",
+      };
       res.json({
         ok: true,
         mode: "evidence_demo" as const,
         fromCache: false,
         hunter: {
           products: [] as ProductHunterIdea[],
-          summary:
-            "Sem edição publicada em amazonLeadsDailyStore. Publique uma edição em Admin → Leads Amazon (Keepa) para alimentar o evidence feed.",
+          summary: emptySummary[locale] ?? emptySummary["pt-BR"],
         },
         meta: { editionDate: null, rowCount: 0, asins: [] as string[] },
       });
@@ -287,6 +315,7 @@ export function registerProductHunterRoutes(app: Express): void {
         suite,
         useCache: true,
         cacheKeyExtra: {},
+        locale,
       });
       res.json({
         ok: true,
@@ -462,9 +491,11 @@ export function registerProductHunterRoutes(app: Express): void {
     }
 
     try {
+      const briefLocale = normalizeProductHunterUiLocale(b.locale);
       const { brief } = await generateProductHunterBrief({
         targetIdea: c.idea,
         competitorAsins: resolved.asins,
+        locale: briefLocale,
       });
       const updated = patchCandidate(suite, id, { brief });
       if (!updated) {

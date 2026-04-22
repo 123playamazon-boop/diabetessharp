@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { CATALOG, DEFAULT_LOCALE, type AppLocale } from "./catalog";
 
 const STORAGE_KEY = "dbx.locale";
@@ -27,11 +27,7 @@ function readStoredLocale(): AppLocale {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<AppLocale>(DEFAULT_LOCALE);
-
-  useEffect(() => {
-    setLocaleState(readStoredLocale());
-  }, []);
+  const [locale, setLocaleState] = useState<AppLocale>(() => readStoredLocale());
 
   const setLocale = useCallback((next: AppLocale) => {
     setLocaleState(next);
