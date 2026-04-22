@@ -55,7 +55,9 @@ import { ClientImproveListingPage } from "./pages/client/ClientImproveListingPag
 import { ClientListingCompliancePage } from "./pages/client/ClientListingCompliancePage";
 import { ClientListingMultiPlatformPage } from "./pages/client/ClientListingMultiPlatformPage";
 import { ClientToolsHubPage } from "./pages/client/ClientToolsHubPage";
-import { ClientProductHunterPage } from "./pages/client/ClientProductHunterPage";
+import { ProductHunterModuleLayout } from "./pages/client/productHunter/ProductHunterModuleLayout";
+import { ClientProductHunterHubPage } from "./pages/client/productHunter/ClientProductHunterHubPage";
+import { ClientProductHunterCandidateDetailPage } from "./pages/client/productHunter/ClientProductHunterCandidateDetailPage";
 
 export default function App() {
   return (
@@ -108,7 +110,10 @@ export default function App() {
         <Route path="improve-listing" element={<ClientImproveListingPage />} />
         <Route path="listing-compliance" element={<ClientListingCompliancePage />} />
         <Route path="listing-multi-platform" element={<ClientListingMultiPlatformPage />} />
-        <Route path="product-hunter" element={<ClientProductHunterPage />} />
+        <Route path="product-hunter" element={<ProductHunterModuleLayout />}>
+          <Route index element={<ClientProductHunterHubPage />} />
+          <Route path="candidatos/:id" element={<ClientProductHunterCandidateDetailPage />} />
+        </Route>
         <Route path="settings" element={<PlaceholderPage title="Settings" subtitle="Profile, plan, language, and notifications." />} />
         </Route>
       </Route>

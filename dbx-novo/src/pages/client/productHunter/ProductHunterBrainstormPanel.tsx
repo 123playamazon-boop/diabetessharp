@@ -1,10 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Radar } from "lucide-react";
 import { toast } from "sonner";
-import { LanguageSwitcher } from "../../components/LanguageSwitcher";
-import { PageHeader } from "../../ui/PageHeader";
-import { useI18n } from "../../i18n/context";
+import { Radar } from "lucide-react";
+import { useI18n } from "../../../i18n/context";
 import {
   PRODUCT_HUNTER_EXPERIENCE_LEVELS,
   PRODUCT_HUNTER_MARKETPLACES,
@@ -12,9 +9,9 @@ import {
   type ProductHunterIdea,
   type ProductHunterMarketplaceId,
   type ProductHunterResult,
-} from "../../../shared/productHunter";
-import { postProductHunter } from "../../lib/productHunterApi";
-import { cn } from "../../lib/cn";
+} from "../../../../shared/productHunter";
+import { postProductHunter, saveProductHunterCandidates } from "../../../lib/productHunterApi";
+import { cn } from "../../../lib/cn";
 
 const inputClass =
   "mt-1 w-full rounded-ds-btn border border-ds-border bg-ds-surface px-3 py-2 text-sm text-ds-text shadow-ds placeholder:text-ds-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ds-primary";
@@ -42,7 +39,16 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
-function ProductCard({ product, t }: { product: ProductHunterIdea; t: (k: string) => string }) {
+function ProductCard({
+  product,
+  onSave,
+  saving,
+}: {
+  product: ProductHunterIdea;
+  onSave: () => void;
+  saving: boolean;
+}) {
+  const { t } = useI18n();
   return (
     <article className="rounded-ds-card border border-ds-border bg-ds-surface p-5 shadow-ds ring-1 ring-black/[0.02]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -82,16 +88,31 @@ function ProductCard({ product, t }: { product: ProductHunterIdea; t: (k: string
           <dd className="mt-0.5 leading-relaxed text-ds-text">{product.sellingStrategy}</dd>
         </div>
       </dl>
+      <div className="mt-4 border-t border-ds-border pt-4">
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => onSave()}
+          className="rounded-ds-btn border border-ds-border bg-ds-bg px-3 py-2 text-xs font-bold uppercase tracking-wide text-ds-text shadow-ds hover:bg-ds-surface disabled:opacity-50"
+        >
+          {t("client.productHunter.saveCandidate")}
+        </button>
+      </div>
     </article>
   );
 }
 
-export function ClientProductHunterPage() {
+type Props = {
+  onCandidatesChanged?: () => void;
+};
+
+export function ProductHunterBrainstormPanel({ onCandidatesChanged }: Props) {
   const { t } = useI18n();
   const [budget, setBudget] = useState("");
   const [marketplace, setMarketplace] = useState<ProductHunterMarketplaceId>(defaultMarketplace);
   const [experience, setExperience] = useState<ProductHunterExperienceLevel>(defaultExperience);
   const [busy, setBusy] = useState(false);
+  const [savingIdx, setSavingIdx] = useState<number | null>(null);
   const [hunter, setHunter] = useState<ProductHunterResult | null>(null);
   const [mode, setMode] = useState<"live" | "demo" | null>(null);
   const [warn, setWarn] = useState<string | null>(null);
@@ -121,25 +142,24 @@ export function ClientProductHunterPage() {
     }
   };
 
+  const saveIdea = async (idx: number) => {
+    if (!hunter?.products[idx]) return;
+    setSavingIdx(idx);
+    try {
+      const r = await saveProductHunterCandidates({ ideas: [hunter.products[idx]], source: "hunter_run" });
+      if (!r.ok) {
+        toast.error(r.error);
+        return;
+      }
+      toast.success(t("client.productHunter.savedCandidateToast"));
+      onCandidatesChanged?.();
+    } finally {
+      setSavingIdx(null);
+    }
+  };
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
-        eyebrow={t("client.productHunter.eyebrow")}
-        title={t("client.productHunter.title")}
-        subtitle={t("client.productHunter.subtitle")}
-        actions={<LanguageSwitcher />}
-      />
-
-      <p className="text-sm text-ds-muted">
-        <Link to="/app/dashboard" className="font-semibold text-ds-primary underline-offset-2 hover:underline">
-          {t("client.productHunter.backDashboard")}
-        </Link>
-        {" · "}
-        <Link to="/app/tools" className="font-semibold text-ds-primary underline-offset-2 hover:underline">
-          {t("client.productHunter.linkTools")}
-        </Link>
-      </p>
-
+    <div className="space-y-6">
       <section className="rounded-ds-card border border-ds-border bg-ds-surface p-5 shadow-ds">
         <div className="space-y-4">
           <div>
@@ -223,7 +243,7 @@ export function ClientProductHunterPage() {
           <ul className="space-y-4">
             {hunter.products.map((p, idx) => (
               <li key={idx}>
-                <ProductCard product={p} t={t} />
+                <ProductCard product={p} saving={savingIdx === idx} onSave={() => void saveIdea(idx)} />
               </li>
             ))}
           </ul>
