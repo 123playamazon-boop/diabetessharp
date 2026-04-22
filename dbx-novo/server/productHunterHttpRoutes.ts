@@ -7,11 +7,16 @@ import {
   type ProductHunterIdea,
   type ProductHunterMarketplaceId,
   type ProductHunterResult,
+  type ProductHunterCandidateSource,
   buildDemoProductHunter,
+  isProductHunterCandidateSource,
   isProductHunterCandidateStatus,
   isProductHunterExperienceLevel,
   isProductHunterMarketplaceId,
 } from "../shared/productHunter";
+import { getEditionByDate, getLatestEdition } from "./amazonLeadsDailyStore";
+import { coerceLeadRow } from "./keepaAmazonLeads";
+import { mergeEvidenceFilters, runEvidenceFeedPipeline, type EvidenceWinnerFilters } from "./productHunterEvidenceFeed";
 import {
   deleteCandidate,
   listCandidatesBySuite,
@@ -210,6 +215,86 @@ export function registerProductHunterRoutes(app: Express): void {
     res.json({ ok: true, mode: "demo", hunter: runDemo() });
   });
 
+  app.post("/api/client/product-hunter/evidence-feed", requireUser, async (req: Request, res: Response) => {
+    const suite = userSuite(req);
+    const b = req.body && typeof req.body === "object" ? (req.body as Record<string, unknown>) : {};
+    const budget = typeof b.budget === "string" ? b.budget.trim() : "";
+    const marketplaceRaw = typeof b.marketplace === "string" ? b.marketplace.trim() : "";
+    const experienceRaw = typeof b.experienceLevel === "string" ? b.experienceLevel.trim() : "";
+
+    if (!budget) {
+      res.status(400).json({ error: "Indique o orçamento (budget)." });
+      return;
+    }
+    if (budget.length > MAX_BUDGET_LEN) {
+      res.status(400).json({ error: "Orçamento demasiado longo." });
+      return;
+    }
+    if (!isProductHunterMarketplaceId(marketplaceRaw)) {
+      res.status(400).json({ error: "Marketplace inválido.", validMarketplaces: ["amazon_us", "walmart_us", "tiktok_shop_us", "shopify", "ebay_us"] });
+      return;
+    }
+    if (marketplaceRaw !== "amazon_us") {
+      res.status(400).json({
+        error:
+          "Evidence feed disponível apenas para amazon_us nesta fase. Use POST /api/client/product-hunter para outros marketplaces.",
+      });
+      return;
+    }
+    if (!isProductHunterExperienceLevel(experienceRaw)) {
+      res.status(400).json({ error: "Nível de experiência inválido.", validLevels: ["beginner", "intermediate", "advanced"] });
+      return;
+    }
+    const experience = experienceRaw as ProductHunterExperienceLevel;
+
+    const editionDateQ = typeof b.editionDate === "string" ? b.editionDate.trim() : "";
+    const editionDate =
+      editionDateQ && /^\d{4}-\d{2}-\d{2}$/.test(editionDateQ) ? editionDateQ : undefined;
+    const edition = editionDate ? getEditionByDate(editionDate) ?? getLatestEdition() : getLatestEdition();
+
+    if (!edition) {
+      res.json({
+        ok: true,
+        mode: "evidence_demo" as const,
+        fromCache: false,
+        hunter: {
+          products: [] as ProductHunterIdea[],
+          summary:
+            "Sem edição publicada em amazonLeadsDailyStore. Publique uma edição em Admin → Leads Amazon (Keepa) para alimentar o evidence feed.",
+        },
+        meta: { editionDate: null, rowCount: 0, asins: [] as string[] },
+      });
+      return;
+    }
+
+    const filtersPartial = b.filters && typeof b.filters === "object" ? (b.filters as Partial<EvidenceWinnerFilters>) : undefined;
+    const filters = mergeEvidenceFilters(filtersPartial);
+
+    const rows = edition.rows.map((r) => coerceLeadRow(r));
+    try {
+      const { result, mode, fromCache } = await runEvidenceFeedPipeline({
+        rows,
+        filters,
+        budget,
+        experience,
+        editionDate: edition.editionDate,
+        suite,
+        useCache: true,
+        cacheKeyExtra: {},
+      });
+      res.json({
+        ok: true,
+        mode,
+        fromCache,
+        hunter: { products: result.products, summary: result.summary },
+        meta: result.meta,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message.slice(0, 400) : "Erro ao gerar evidence feed.";
+      res.status(502).json({ error: msg });
+    }
+  });
+
   const MAX_CANDIDATE_IDEAS = 8;
 
   app.post("/api/client/product-hunter/candidates", requireUser, (req: Request, res: Response) => {
@@ -229,10 +314,10 @@ export function registerProductHunterRoutes(app: Express): void {
       return;
     }
     const rawSource = b.source;
-    let source: "hunter_run" | "manual" = "hunter_run";
+    let source: ProductHunterCandidateSource = "hunter_run";
     if (rawSource !== undefined && rawSource !== null) {
-      if (rawSource !== "hunter_run" && rawSource !== "manual") {
-        res.status(400).json({ error: "Origem inválida. Use «hunter_run» ou «manual»." });
+      if (!isProductHunterCandidateSource(rawSource)) {
+        res.status(400).json({ error: "Origem inválida. Use «hunter_run», «manual» ou «evidence_feed»." });
         return;
       }
       source = rawSource;

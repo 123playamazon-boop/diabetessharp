@@ -34,12 +34,16 @@ export const PRODUCT_HUNTER_CANDIDATE_STATUSES = ["saved", "testing", "launched"
 
 export type ProductHunterCandidateStatus = (typeof PRODUCT_HUNTER_CANDIDATE_STATUSES)[number];
 
+export const PRODUCT_HUNTER_CANDIDATE_SOURCES = ["hunter_run", "manual", "evidence_feed"] as const;
+
+export type ProductHunterCandidateSource = (typeof PRODUCT_HUNTER_CANDIDATE_SOURCES)[number];
+
 export type ProductHunterCandidate = {
   id: string;
   suite: string;
   savedAtIso: string;
   updatedAtIso: string;
-  source: "hunter_run" | "manual";
+  source: ProductHunterCandidateSource;
   idea: ProductHunterIdea;
   status: ProductHunterCandidateStatus;
   notes?: string;
@@ -47,6 +51,10 @@ export type ProductHunterCandidate = {
 
 export function isProductHunterCandidateStatus(v: unknown): v is ProductHunterCandidateStatus {
   return typeof v === "string" && (PRODUCT_HUNTER_CANDIDATE_STATUSES as readonly string[]).includes(v);
+}
+
+export function isProductHunterCandidateSource(v: unknown): v is ProductHunterCandidateSource {
+  return typeof v === "string" && (PRODUCT_HUNTER_CANDIDATE_SOURCES as readonly string[]).includes(v);
 }
 
 export function isProductHunterMarketplaceId(v: string): v is ProductHunterMarketplaceId {

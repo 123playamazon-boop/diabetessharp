@@ -3,8 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   type ProductHunterCandidate,
+  type ProductHunterCandidateSource,
   type ProductHunterCandidateStatus,
   type ProductHunterIdea,
+  isProductHunterCandidateSource,
   isProductHunterCandidateStatus,
 } from "../shared/productHunter";
 
@@ -70,7 +72,9 @@ function normalizeCandidate(raw: unknown): ProductHunterCandidate | null {
   const suite = typeof r.suite === "string" ? r.suite.trim() : "";
   const savedAtIso = typeof r.savedAtIso === "string" ? r.savedAtIso : "";
   const updatedAtIso = typeof r.updatedAtIso === "string" ? r.updatedAtIso : "";
-  const source = r.source === "manual" || r.source === "hunter_run" ? r.source : null;
+  const sourceRaw = r.source;
+  const source: ProductHunterCandidateSource | null =
+    typeof sourceRaw === "string" && isProductHunterCandidateSource(sourceRaw) ? sourceRaw : null;
   const statusRaw = r.status;
   const status: ProductHunterCandidateStatus | null =
     typeof statusRaw === "string" && isProductHunterCandidateStatus(statusRaw) ? statusRaw : null;
@@ -121,11 +125,7 @@ export function listCandidatesBySuite(suite: string): ProductHunterCandidate[] {
     .sort((a, b) => Date.parse(b.savedAtIso) - Date.parse(a.savedAtIso));
 }
 
-export function saveCandidate(
-  suite: string,
-  idea: ProductHunterIdea,
-  source: "hunter_run" | "manual",
-): ProductHunterCandidate {
+export function saveCandidate(suite: string, idea: ProductHunterIdea, source: ProductHunterCandidateSource): ProductHunterCandidate {
   const sTrim = suite.trim();
   const now = new Date().toISOString();
   const c: ProductHunterCandidate = {
