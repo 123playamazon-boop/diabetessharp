@@ -1419,6 +1419,18 @@ const ptBR: Record<string, string> = {
   "client.productHunter.brief.progress2": "Extraindo pain points…",
   "client.productHunter.brief.progress3": "Gerando recomendações de melhoria…",
   "client.productHunter.brief.progress4": "Quase pronto…",
+  "client.productHunter.brief.asinLabel": "ASIN de um concorrente já vendendo",
+  "client.productHunter.brief.asinHelper":
+    "Escolha um produto que já está vendendo bem no Amazon dentro do mesmo nicho — o sistema vai ler os reviews dele e de outros similares.",
+  "client.productHunter.brief.asinPlaceholder": "B07H9YTNPX",
+  "client.productHunter.brief.asinHowTo.titleCollapsed": "Como encontrar um ASIN? (clique para ver)",
+  "client.productHunter.brief.asinHowTo.titleExpanded": "Como encontrar um ASIN ▾",
+  "client.productHunter.brief.asinHowTo.step1": "Abra Amazon.com noutro separador.",
+  "client.productHunter.brief.asinHowTo.step2":
+    "Procure por palavras-chave do seu nicho (por exemplo, se o candidato é «microcategoria outdoor sazonal», experimente «outdoor folding chair» ou «portable hammock»).",
+  "client.productHunter.brief.asinHowTo.step3":
+    "Clique num produto com muitas avaliações. Na URL aparece amazon.com/dp/B07H9YTNPX/... — o B07H9YTNPX é o ASIN. Copie e cole aqui.",
+  "client.productHunter.brief.saveContextHelp": "Guarda o ASIN e a categoria no candidato para reutilizar no próximo brief.",
   "client.dashboard.weeklyTitle": "Esta semana",
   "client.dashboard.weeklyIntro": "Resumo rápido com base nos dados deste browser e suite.",
   "client.dashboard.weekly.shipmentsCreated": "Pedidos criados (7 dias)",
@@ -3146,6 +3158,18 @@ const enOverrides: Record<string, string> = {
   "client.productHunter.brief.progress2": "Extracting pain points…",
   "client.productHunter.brief.progress3": "Generating improvement recommendations…",
   "client.productHunter.brief.progress4": "Almost ready…",
+  "client.productHunter.brief.asinLabel": "Competitor ASIN (reference product)",
+  "client.productHunter.brief.asinHelper":
+    "Pick a product that is already selling well on Amazon in the same niche — the system will read its reviews and those of similar listings.",
+  "client.productHunter.brief.asinPlaceholder": "B07H9YTNPX",
+  "client.productHunter.brief.asinHowTo.titleCollapsed": "How do I find an ASIN? (click to expand)",
+  "client.productHunter.brief.asinHowTo.titleExpanded": "How to find an ASIN ▾",
+  "client.productHunter.brief.asinHowTo.step1": "Open Amazon.com in another tab.",
+  "client.productHunter.brief.asinHowTo.step2":
+    "Search for keywords in your niche (for example, if your candidate is “seasonal outdoor micro-niche”, try “outdoor folding chair” or “portable hammock”).",
+  "client.productHunter.brief.asinHowTo.step3":
+    "Open a product with many reviews. The URL looks like amazon.com/dp/B07H9YTNPX/... — the B07H9YTNPX segment is the ASIN. Copy and paste it here.",
+  "client.productHunter.brief.saveContextHelp": "Saves the ASIN and category on the candidate so you can reuse them for the next brief.",
   "client.dashboard.weeklyTitle": "This week",
   "client.dashboard.weeklyIntro": "Quick snapshot from this browser and suite data.",
   "client.dashboard.weekly.shipmentsCreated": "Orders created (7 days)",
@@ -4788,6 +4812,18 @@ const esOverrides: Record<string, string> = {
   "client.productHunter.brief.progress2": "Extrayendo pain points…",
   "client.productHunter.brief.progress3": "Generando recomendaciones de mejora…",
   "client.productHunter.brief.progress4": "Casi listo…",
+  "client.productHunter.brief.asinLabel": "ASIN de un competidor ya vendiendo",
+  "client.productHunter.brief.asinHelper":
+    "Elija un producto que ya venda bien en Amazon dentro del mismo nicho — el sistema leerá sus reseñas y las de otros similares.",
+  "client.productHunter.brief.asinPlaceholder": "B07H9YTNPX",
+  "client.productHunter.brief.asinHowTo.titleCollapsed": "¿Cómo encuentro un ASIN? (pulse para ver)",
+  "client.productHunter.brief.asinHowTo.titleExpanded": "Cómo encontrar un ASIN ▾",
+  "client.productHunter.brief.asinHowTo.step1": "Abra Amazon.com en otra pestaña.",
+  "client.productHunter.brief.asinHowTo.step2":
+    "Busque palabras clave de su nicho (por ejemplo, si el candidato es «microcategoría outdoor estacional», pruebe «outdoor folding chair» o «portable hammock»).",
+  "client.productHunter.brief.asinHowTo.step3":
+    "Entre en un producto con muchas reseñas. En la URL verá amazon.com/dp/B07H9YTNPX/... — el B07H9YTNPX es el ASIN. Cópielo y péguelo aquí.",
+  "client.productHunter.brief.saveContextHelp": "Guarda el ASIN y la categoría en el candidato para reutilizarlos en el próximo brief.",
   "client.dashboard.weeklyTitle": "Esta semana",
   "client.dashboard.weeklyIntro": "Resumen rápido con datos de este navegador y suite.",
   "client.dashboard.weekly.shipmentsCreated": "Pedidos creados (7 días)",

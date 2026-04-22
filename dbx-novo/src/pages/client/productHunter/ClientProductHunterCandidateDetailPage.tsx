@@ -31,6 +31,7 @@ export function ClientProductHunterCandidateDetailPage() {
   const notesDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [seedAsin, setSeedAsin] = useState("");
   const [categoryLabel, setCategoryLabel] = useState("");
+  const [asinHowToOpen, setAsinHowToOpen] = useState(false);
   const [brief, setBrief] = useState<ProductHunterBrief | null>(null);
   const [genBusy, setGenBusy] = useState(false);
   const [forceRegen, setForceRegen] = useState(false);
@@ -59,6 +60,7 @@ export function ClientProductHunterCandidateDetailPage() {
     }
     setCandidate(c);
     setNotes(c.notes ?? "");
+    // Pre-filled from candidate hunterContext (Evidence Feed origin when save patched ASIN).
     setSeedAsin(c.hunterContext?.seedAsin ?? "");
     setCategoryLabel(c.hunterContext?.categoryLabel ?? "");
     if (c.brief) {
@@ -68,6 +70,12 @@ export function ClientProductHunterCandidateDetailPage() {
       setBrief(br.ok ? br.brief : null);
     }
     setLoadState("ready");
+  }, [id]);
+
+  /** Clear brief inputs when switching candidate so we never show the previous route's ASIN/category. */
+  useEffect(() => {
+    setSeedAsin("");
+    setCategoryLabel("");
   }, [id]);
 
   useEffect(() => {
@@ -237,9 +245,26 @@ export function ClientProductHunterCandidateDetailPage() {
         <p className="text-xs leading-relaxed text-ds-muted">{t("client.productHunter.detail.briefHint")}</p>
         <div>
           <label className="text-xs font-bold uppercase tracking-wide text-ds-muted" htmlFor="ph-seed">
-            {t("client.productHunter.detail.seedAsinLabel")}
+            {t("client.productHunter.brief.asinLabel")}
           </label>
-          <input id="ph-seed" value={seedAsin} onChange={(e) => setSeedAsin(e.target.value)} placeholder={t("client.productHunter.detail.seedAsinPh")} className={inputClass} />
+          <p className="mt-1 text-xs leading-relaxed text-ds-muted">{t("client.productHunter.brief.asinHelper")}</p>
+          <input
+            id="ph-seed"
+            value={seedAsin}
+            onChange={(e) => setSeedAsin(e.target.value)}
+            placeholder={t("client.productHunter.brief.asinPlaceholder")}
+            className={inputClass}
+          />
+          <details className="mt-2" onToggle={(e) => setAsinHowToOpen((e.currentTarget as HTMLDetailsElement).open)}>
+            <summary className="cursor-pointer list-none select-none text-sm font-semibold text-ds-primary underline-offset-2 hover:underline [&::-webkit-details-marker]:hidden">
+              {asinHowToOpen ? t("client.productHunter.brief.asinHowTo.titleExpanded") : t("client.productHunter.brief.asinHowTo.titleCollapsed")}
+            </summary>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-ds-muted">
+              <li>{t("client.productHunter.brief.asinHowTo.step1")}</li>
+              <li>{t("client.productHunter.brief.asinHowTo.step2")}</li>
+              <li>{t("client.productHunter.brief.asinHowTo.step3")}</li>
+            </ol>
+          </details>
         </div>
         <div>
           <label className="text-xs font-bold uppercase tracking-wide text-ds-muted" htmlFor="ph-cat">
@@ -247,14 +272,17 @@ export function ClientProductHunterCandidateDetailPage() {
           </label>
           <input id="ph-cat" value={categoryLabel} onChange={(e) => setCategoryLabel(e.target.value)} className={inputClass} />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => void saveContext()}
-            className="rounded-ds-btn border border-ds-border bg-ds-bg px-3 py-2 text-xs font-bold uppercase tracking-wide text-ds-text"
-          >
-            {t("client.productHunter.detail.saveContext")}
-          </button>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => void saveContext()}
+              className="w-fit rounded-ds-btn border border-ds-border bg-ds-bg px-3 py-2 text-xs font-bold uppercase tracking-wide text-ds-text"
+            >
+              {t("client.productHunter.detail.saveContext")}
+            </button>
+            <p className="max-w-md text-xs leading-relaxed text-ds-muted">{t("client.productHunter.brief.saveContextHelp")}</p>
+          </div>
           <label className="flex items-center gap-2 text-xs text-ds-muted">
             <input type="checkbox" checked={forceRegen} onChange={(e) => setForceRegen(e.target.checked)} />
             {t("client.productHunter.detail.briefRegenerate")}
