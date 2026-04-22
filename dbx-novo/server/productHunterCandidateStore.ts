@@ -2,12 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  type ProductHunterBrief,
   type ProductHunterCandidate,
+  type ProductHunterCandidateContext,
   type ProductHunterCandidateSource,
   type ProductHunterCandidateStatus,
   type ProductHunterIdea,
   isProductHunterCandidateSource,
   isProductHunterCandidateStatus,
+  normalizeProductHunterBrief,
+  normalizeProductHunterCandidateContext,
 } from "../shared/productHunter";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -81,7 +85,9 @@ function normalizeCandidate(raw: unknown): ProductHunterCandidate | null {
   const idea = normalizeIdea(r.idea);
   if (!id || !suite || !savedAtIso || !updatedAtIso || !source || !status || !idea) return null;
   const notes = typeof r.notes === "string" ? sanitizeNotes(r.notes) : undefined;
-  return { id, suite, savedAtIso, updatedAtIso, source, idea, status, notes };
+  const hunterContext = normalizeProductHunterCandidateContext(r.hunterContext);
+  const brief = normalizeProductHunterBrief(r.brief) ?? undefined;
+  return { id, suite, savedAtIso, updatedAtIso, source, idea, status, notes, hunterContext, brief };
 }
 
 function readSnapshot(): Snapshot {
@@ -117,6 +123,14 @@ export function readAllCandidates(): ProductHunterCandidate[] {
   return readSnapshot().candidates;
 }
 
+export function getCandidateByIdInSuite(suite: string, id: string): ProductHunterCandidate | null {
+  const s = suite.trim();
+  const idTrim = id.trim();
+  if (!s || !idTrim) return null;
+  const c = readSnapshot().candidates.find((x) => x.id === idTrim && x.suite === s);
+  return c ?? null;
+}
+
 export function listCandidatesBySuite(suite: string): ProductHunterCandidate[] {
   const s = suite.trim();
   if (!s) return [];
@@ -146,7 +160,12 @@ export function saveCandidate(suite: string, idea: ProductHunterIdea, source: Pr
 export function patchCandidate(
   suite: string,
   id: string,
-  patch: { status?: ProductHunterCandidateStatus; notes?: string },
+  patch: {
+    status?: ProductHunterCandidateStatus;
+    notes?: string;
+    brief?: ProductHunterBrief;
+    hunterContext?: ProductHunterCandidateContext;
+  },
 ): ProductHunterCandidate | null {
   const sTrim = suite.trim();
   const idTrim = id.trim();
@@ -159,6 +178,10 @@ export function patchCandidate(
   const next: ProductHunterCandidate = { ...cur, updatedAtIso: new Date().toISOString() };
   if (patch.status !== undefined) next.status = patch.status;
   if (patch.notes !== undefined) next.notes = sanitizeNotes(patch.notes);
+  if (Object.prototype.hasOwnProperty.call(patch, "brief")) next.brief = patch.brief;
+  if (Object.prototype.hasOwnProperty.call(patch, "hunterContext")) {
+    next.hunterContext = normalizeProductHunterCandidateContext(patch.hunterContext);
+  }
   snap.candidates[i] = next;
   writeSnapshot(snap);
   return next;

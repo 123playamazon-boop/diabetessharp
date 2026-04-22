@@ -8,17 +8,23 @@ import {
   type ProductHunterMarketplaceId,
   type ProductHunterResult,
   type ProductHunterCandidateSource,
+  type ProductHunterCandidateContext,
   buildDemoProductHunter,
   isProductHunterCandidateSource,
   isProductHunterCandidateStatus,
   isProductHunterExperienceLevel,
   isProductHunterMarketplaceId,
+  normalizeProductHunterCandidateContext,
 } from "../shared/productHunter";
 import { getEditionByDate, getLatestEdition } from "./amazonLeadsDailyStore";
-import { coerceLeadRow } from "./keepaAmazonLeads";
+import { coerceLeadRow, type AmazonLeadTableRow } from "./keepaAmazonLeads";
 import { mergeEvidenceFilters, runEvidenceFeedPipeline, type EvidenceWinnerFilters } from "./productHunterEvidenceFeed";
+import { generateProductHunterBrief } from "./productHunterBriefService";
+import { resolveCompetitorAsins } from "./productHunterBriefCompetitors";
+import { tryConsumeBriefSlot } from "./productHunterBriefRateStore";
 import {
   deleteCandidate,
+  getCandidateByIdInSuite,
   listCandidatesBySuite,
   patchCandidate,
   readAllCandidates,
@@ -341,6 +347,137 @@ export function registerProductHunterRoutes(app: Express): void {
     res.json({ ok: true, candidates });
   });
 
+  app.get("/api/client/product-hunter/candidates/:id/brief", requireUser, (req: Request, res: Response) => {
+    const suite = userSuite(req);
+    const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
+    if (!id) {
+      res.status(400).json({ error: "Identificador em falta." });
+      return;
+    }
+    const c = getCandidateByIdInSuite(suite, id);
+    if (!c) {
+      res.status(404).json({ error: "Candidato não encontrado." });
+      return;
+    }
+    if (!c.brief) {
+      res.status(404).json({ error: "Ainda não existe brief para este candidato. Use POST para gerar." });
+      return;
+    }
+    res.json({ ok: true, brief: c.brief });
+  });
+
+  app.post("/api/client/product-hunter/candidates/:id/brief", requireUser, async (req: Request, res: Response) => {
+    const suite = userSuite(req);
+    const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
+    if (!id) {
+      res.status(400).json({ error: "Identificador em falta." });
+      return;
+    }
+    const c = getCandidateByIdInSuite(suite, id);
+    if (!c) {
+      res.status(404).json({ error: "Candidato não encontrado." });
+      return;
+    }
+    const b = req.body && typeof req.body === "object" ? (req.body as Record<string, unknown>) : {};
+    const force = b.force === true || b.force === 1 || (typeof b.force === "string" && b.force.trim().toLowerCase() === "true");
+    if (c.brief && !force) {
+      res.status(409).json({
+        error: "Já existe um brief para este candidato. Envie «force»: true no corpo para regerar.",
+      });
+      return;
+    }
+
+    const seedRaw = typeof b.seedAsin === "string" ? b.seedAsin.trim().toUpperCase() : "";
+    const seedAsin = seedRaw || c.hunterContext?.seedAsin?.trim().toUpperCase() || "";
+    if (!seedAsin || !/^B[A-Z0-9]{9}$/.test(seedAsin)) {
+      res.status(400).json({
+        error: "Indique o ASIN alvo em «seedAsin» no corpo ou guarde «hunterContext.seedAsin» no candidato (via PATCH).",
+      });
+      return;
+    }
+
+    const manualRaw = b.competitorAsins;
+    const manual =
+      Array.isArray(manualRaw) && manualRaw.every((x) => typeof x === "string")
+        ? (manualRaw as string[]).map((x) => x.trim().toUpperCase())
+        : undefined;
+    const manualOk = (manual?.length ?? 0) >= 3;
+
+    const editionDateQ =
+      typeof b.editionDate === "string" ? b.editionDate.trim() : c.hunterContext?.editionDate?.trim() || "";
+    let editionRows: AmazonLeadTableRow[] = [];
+    if (!manualOk) {
+      const edition =
+        editionDateQ && /^\d{4}-\d{2}-\d{2}$/.test(editionDateQ)
+          ? getEditionByDate(editionDateQ) ?? getLatestEdition()
+          : getLatestEdition();
+      if (!edition) {
+        res.status(400).json({
+          error: "Sem edição de leads Amazon. Publique uma edição (Admin → Leads Amazon) para seleccionar concorrentes.",
+        });
+        return;
+      }
+      editionRows = edition.rows.map((r) => coerceLeadRow(r));
+    } else {
+      const edition =
+        editionDateQ && /^\d{4}-\d{2}-\d{2}$/.test(editionDateQ)
+          ? getEditionByDate(editionDateQ) ?? getLatestEdition()
+          : getLatestEdition();
+      if (edition) editionRows = edition.rows.map((r) => coerceLeadRow(r));
+    }
+
+    const catHint =
+      (typeof b.categoryLabel === "string" ? b.categoryLabel.trim() : "") ||
+      c.hunterContext?.categoryLabel?.trim() ||
+      "";
+    const seedRow = editionRows.find((r) => r.asin.trim().toUpperCase() === seedAsin);
+    const categoryLabel = catHint || (seedRow?.categoryLabel ?? "").trim() || (manualOk ? "manual" : "");
+
+    if (!manualOk && !categoryLabel) {
+      res.status(400).json({
+        error: "Indique «categoryLabel» no corpo ou em «hunterContext» do candidato para encontrar vizinhos na edição.",
+      });
+      return;
+    }
+
+    const resolved = resolveCompetitorAsins({
+      editionRows,
+      seedAsin,
+      categoryLabel: categoryLabel || "manual",
+      manual,
+    });
+    if (!resolved.ok) {
+      res.status(400).json({ error: resolved.error });
+      return;
+    }
+
+    const slot = tryConsumeBriefSlot(suite);
+    if (!slot.ok) {
+      res.status(429).json({
+        error: `Limite diário de briefs (${slot.max}) atingido. Reinicia à meia-noite UTC.`,
+        resetsAtIso: slot.resetsAtIso,
+        max: slot.max,
+      });
+      return;
+    }
+
+    try {
+      const { brief } = await generateProductHunterBrief({
+        targetIdea: c.idea,
+        competitorAsins: resolved.asins,
+      });
+      const updated = patchCandidate(suite, id, { brief });
+      if (!updated) {
+        res.status(404).json({ error: "Candidato não encontrado." });
+        return;
+      }
+      res.json({ ok: true, brief: updated.brief });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message.slice(0, 400) : "Erro ao gerar brief.";
+      res.status(502).json({ error: msg });
+    }
+  });
+
   app.patch("/api/client/product-hunter/candidates/:id", requireUser, (req: Request, res: Response) => {
     const suite = userSuite(req);
     const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
@@ -367,11 +504,12 @@ export function registerProductHunterRoutes(app: Express): void {
     const p = patchRaw as Record<string, unknown>;
     const hasStatus = Object.prototype.hasOwnProperty.call(p, "status");
     const hasNotes = Object.prototype.hasOwnProperty.call(p, "notes");
-    if (!hasStatus && !hasNotes) {
-      res.status(400).json({ error: "O patch está vazio. Indique «status» e/ou «notes»." });
+    const hasHunterContext = Object.prototype.hasOwnProperty.call(p, "hunterContext");
+    if (!hasStatus && !hasNotes && !hasHunterContext) {
+      res.status(400).json({ error: "O patch está vazio. Indique «status», «notes» e/ou «hunterContext»." });
       return;
     }
-    const patch: { status?: typeof row.status; notes?: string } = {};
+    const patch: { status?: typeof row.status; notes?: string; hunterContext?: ProductHunterCandidateContext } = {};
     if (hasStatus) {
       if (!isProductHunterCandidateStatus(p.status)) {
         res.status(400).json({ error: "Estado inválido.", validStatuses: ["saved", "testing", "launched", "rejected"] });
@@ -385,6 +523,18 @@ export function registerProductHunterRoutes(app: Express): void {
         return;
       }
       patch.notes = p.notes;
+    }
+    if (hasHunterContext) {
+      if (!p.hunterContext || typeof p.hunterContext !== "object") {
+        res.status(400).json({ error: "«hunterContext» deve ser um objecto." });
+        return;
+      }
+      const hc = normalizeProductHunterCandidateContext(p.hunterContext);
+      if (!hc || (!hc.seedAsin && !hc.editionDate && !hc.categoryLabel)) {
+        res.status(400).json({ error: "«hunterContext» vazio ou inválido." });
+        return;
+      }
+      patch.hunterContext = hc as ProductHunterCandidateContext;
     }
     const updated = patchCandidate(suite, id, patch);
     if (!updated) {
